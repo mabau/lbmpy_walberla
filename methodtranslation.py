@@ -9,7 +9,7 @@ def createLbmpyMethodFromWalberlaLatticeModel(lm):
     """
     Creates a lbmpy LBM from a waLBerla lattice model
     """
-    from lbmpy.methods.momentbased import createSRT, createTRT, createOrthogonalMRT
+    from lbmpy.methods.momentbased import createSRT, createTRT
     stencil = tuple(lm.directions)
 
     def getForce():
