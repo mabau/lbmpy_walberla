@@ -53,9 +53,6 @@ def createLbmpyMethodFromWalberlaLatticeModel(lm):
             (y ** 2 - z ** 2) * x: s[16], (z ** 2 - x ** 2) * y: s[16], (x ** 2 - y ** 2) * z: s[16]  # [16, 17, 18]
         }
         return createWithDiscreteMaxwellianEqMoments(stencil, mrtDef, **commonParams)
-    #elif type(lm.collisionModel) == lbm.collisionModels.D3Q27Cumulant:
-    #    coll = CorrectedD3Q27Collision(lm.collisionModel.relaxationRates)
-    #    return CumulantRelaxationLatticeModel(stencil, coll)
     else:
         raise ValueError("Unknown lattice model")
 
@@ -124,7 +121,7 @@ def createLbmpySweepFromWalberlaLatticeModel(walberlaLatticeModel, blocks, pdfFi
 
 def createBoundaryIndexListFromWalberlaFlagField(flagField, stencil, boundaryFlag, fluidFlag):
     import waLBerla as wlb
-    from lbmpy_old.boundaries import createBoundaryIndexList
+    from lbmpy.boundaries.createindexlist import createBoundaryIndexList
     flagFieldArr = wlb.field.toArray(flagField, withGhostLayers=True)
     fluidMask = flagField.flag(fluidFlag)
     boundaryMask = flagField.flag(boundaryFlag)
