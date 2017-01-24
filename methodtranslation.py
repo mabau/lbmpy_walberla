@@ -1,15 +1,12 @@
 from waLBerla import lbm
-
-from lbmpy.methods.momentbased import createWithDiscreteMaxwellianEqMoments
 from pystencils.cpu.kernelcreation import addOpenMP
-import sympy as sp
 
 
 def createLbmpyMethodFromWalberlaLatticeModel(lm):
     """
     Creates a lbmpy LBM from a waLBerla lattice model
     """
-    from lbmpy.methods.momentbased import createSRT, createTRT
+    from lbmpy.methods.momentbased import createSRT, createTRT, createOrthogonalMRT
     stencil = tuple(lm.directions)
 
     def getForce():
@@ -41,18 +38,17 @@ def createLbmpyMethodFromWalberlaLatticeModel(lm):
         from lbmpy.moments import MOMENT_SYMBOLS
         x, y, z = MOMENT_SYMBOLS
         s = lm.collisionModel.relaxationRates
-        sq = x ** 2 + y ** 2 + z ** 2
-        one = sp.Rational(1, 1)
-        mrtDef = {
-            one: 1, x: 1, y: 1, z: 1,
-            3 * x ** 2 - sq: s[9], y ** 2 - z ** 2: s[9], x * y: s[9], y * z: s[9], x * z: s[9],  # [9, 11, 13, 14, 15]
-            sq - 1: s[1],  # [1]
-            3 * sq ** 2 - 6 * sq + 1: s[2],  # [2]
-            (3 * sq - 5) * x: s[4], (3 * sq - 5) * y: s[4], (3 * sq - 5) * z: s[4],  # [4, 6, 8]
-            (2 * sq - 3) * (3 * x ** 2 - sq): s[10], (2 * sq - 3) * (y ** 2 - z ** 2): s[10],  # [10, 12]
-            (y ** 2 - z ** 2) * x: s[16], (z ** 2 - x ** 2) * y: s[16], (x ** 2 - y ** 2) * z: s[16]  # [16, 17, 18]
-        }
-        return createWithDiscreteMaxwellianEqMoments(stencil, mrtDef, **commonParams)
+        relaxationRates = [1] + [s[i] for i in (1, 2, 4, 9, 10, 16)]
+
+        nextRelaxationRate = 0
+
+        def relaxationRateGetter(momentGroup):
+            nonlocal nextRelaxationRate
+            res = relaxationRates[nextRelaxationRate]
+            nextRelaxationRate += 1
+            return res
+
+        return createOrthogonalMRT(stencil, relaxationRateGetter, **commonParams)
     else:
         raise ValueError("Unknown lattice model")
 
@@ -133,3 +129,31 @@ def createBoundaryIndexListFromWalberlaFlagField(flagField, stencil, boundaryFla
 
     return createBoundaryIndexList(flagFieldArr, gl, stencil, boundaryMask, fluidMask)
 
+
+def createWalberlaLatticeModel(stencil, method, relaxationRates, compressible=False, order=2,
+                               forceModel='none', force=(0, 0, 0)):
+
+    if method.lower() == 'srt':
+        collisionModel = lbm.collisionModels.SRT(relaxationRates[0], level=0)
+    elif method.lower() == 'trt':
+        collisionModel = lbm.collisionModels.TRT(relaxationRates[0], relaxationRates[1], level=0)
+    elif method.lower() == 'mrt':
+        if stencil != 'D3Q19':
+            raise ValueError("MRT is available for D3Q19 only in waLBerla")
+        collisionModel = lbm.collisionModels.D3Q19MRT(*relaxationRates[:6], level=0)
+    else:
+        raise ValueError("Unknown method: " + str(method))
+
+    if len(force) == 2:
+        force = (force[0], force[1], 0)
+
+    if forceModel is None or forceModel.lower() == 'none':
+        forceModel = lbm.forceModels.NoForce()
+    elif forceModel.lower() == 'simple':
+        forceModel = lbm.forceModels.SimpleConstant(force)
+    elif forceModel.lower() == 'luo':
+        forceModel = lbm.forceModels.LuoConstant(force)
+    elif forceModel.lower() == 'guo':
+        forceModel = lbm.forceModels.GuoConstant(force)
+
+    return lbm.makeLatticeModel(stencil, collisionModel, forceModel, compressible, order)
