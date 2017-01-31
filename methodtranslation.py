@@ -140,7 +140,7 @@ def createWalberlaLatticeModel(stencil, method, relaxationRates, compressible=Fa
     elif method.lower() == 'mrt':
         if stencil != 'D3Q19':
             raise ValueError("MRT is available for D3Q19 only in waLBerla")
-        collisionModel = lbm.collisionModels.D3Q19MRT(*relaxationRates[:6])
+        collisionModel = lbm.collisionModels.D3Q19MRT(*relaxationRates[1:7])
     else:
         raise ValueError("Unknown method: " + str(method))
 
