@@ -155,6 +155,7 @@ def createWalberlaLatticeModel(stencil, method, relaxationRates, compressible=Fa
         forceModel = lbm.forceModels.LuoConstant(force)
     elif forceModel.lower() == 'guo':
         forceModel = lbm.forceModels.GuoConstant(force)
-
+    else:
+        raise ValueError("Unknown force model")
     return lbm.makeLatticeModel(stencil, collisionModel, forceModel, compressible, order)
 
