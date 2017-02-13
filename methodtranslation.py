@@ -40,12 +40,11 @@ def createLbmpyMethodFromWalberlaLatticeModel(lm):
         s = lm.collisionModel.relaxationRates
         relaxationRates = [1] + [s[i] for i in (1, 2, 4, 9, 10, 16)]
 
-        nextRelaxationRate = 0
+        nextRelaxationRate = [0]
 
         def relaxationRateGetter(momentGroup):
-            nonlocal nextRelaxationRate
-            res = relaxationRates[nextRelaxationRate]
-            nextRelaxationRate += 1
+            res = relaxationRates[nextRelaxationRate[0]]
+            nextRelaxationRate[0] += 1
             return res
 
         return createOrthogonalMRT(stencil, relaxationRateGetter, **commonParams)
