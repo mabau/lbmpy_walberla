@@ -8,7 +8,7 @@ def runForceDrivenChannel2D(force, radius, length, **kwargs):
 
     kwargs['force'] = tuple([force, 0, 0])
 
-    domainSize = (length, 2 * radius)
+    domainSize = (length, 2 * radius, 1)
 
     latticeModel = createWalberlaLatticeModel(**kwargs)
     blocks = createUniformBlockGrid(cells=domainSize, periodic=(1, 0, 1))
