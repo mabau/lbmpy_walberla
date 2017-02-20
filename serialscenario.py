@@ -4,7 +4,7 @@ import waLBerla.field as field
 from waLBerla import makeSlice, createUniformBufferedScheme, createUniformBlockGrid
 
 
-def runForceDrivenChannel2D(force, radius, length, **kwargs):
+def createForceDrivenChannel2D(force, radius, length, **kwargs):
 
     kwargs['force'] = tuple([force, 0, 0])
 
@@ -53,7 +53,7 @@ def runForceDrivenChannel2D(force, radius, length, **kwargs):
     return timeLoop
 
 
-def runLidDrivenCavity(domainSize, lidVelocity=0.005, **kwargs):
+def createLidDrivenCavity(domainSize, lidVelocity=0.005, **kwargs):
     D = len(domainSize)
 
     if 'stencil' not in kwargs:
@@ -116,7 +116,3 @@ def runLidDrivenCavity(domainSize, lidVelocity=0.005, **kwargs):
 
     return timeLoop
 
-
-if __name__ == '__main__':
-    tl = runLidDrivenCavity((20, 20), method='SRT', relaxationRates=[1.4])
-    tl(100)
