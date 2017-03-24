@@ -130,7 +130,7 @@ def createBoundaryIndexListFromWalberlaFlagField(flagField, stencil, boundaryFla
 
 
 def createWalberlaLatticeModel(stencil, method, relaxationRates, compressible=False, order=2,
-                               forceModel='none', force=(0, 0, 0)):
+                               forceModel='none', force=(0, 0, 0), **kwargs):
 
     if method.lower() == 'srt':
         collisionModel = lbm.collisionModels.SRT(relaxationRates[0])
