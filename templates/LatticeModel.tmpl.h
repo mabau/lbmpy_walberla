@@ -168,14 +168,14 @@ private:
 
     // Backend classes can access private members:
     friend class {{className}}::Sweep;
-    template<class LM, class Enable> friend class EquilibriumDistribution;
-    template<class LM, class Enable> friend class Equilibrium;
-    template<class LM, class Enable> friend class internal::AdaptVelocityToForce;
-    template<class LM, class Enable> friend class Density;
-    template<class LM>               friend class DensityAndVelocity;
-    template<class LM, class Enable> friend class DensityAndMomentumDensity;
-    template<class LM, class Enable> friend class MomentumDensity;
-    template<class LM, class It, class Enable> friend class DensityAndVelocityRange;
+    template<class LM, class Enable> friend class  EquilibriumDistribution;
+    template<class LM, class Enable> friend struct Equilibrium;
+    template<class LM, class Enable> friend struct internal::AdaptVelocityToForce;
+    template<class LM, class Enable> friend struct Density;
+    template<class LM>               friend struct DensityAndVelocity;
+    template<class LM, class Enable> friend struct DensityAndMomentumDensity;
+    template<class LM, class Enable> friend struct MomentumDensity;
+    template<class LM, class It, class Enable> friend struct DensityAndVelocityRange;
 
     friend mpi::SendBuffer & ::walberla::mpi::operator<< (mpi::SendBuffer & , const {{className}} & );
     friend mpi::RecvBuffer & ::walberla::mpi::operator>> (mpi::RecvBuffer & ,       {{className}} & );
@@ -194,8 +194,9 @@ private:
 
 
 template<>
-struct EquilibriumDistribution< {{className}}, void>
+class EquilibriumDistribution< {{className}}, void>
 {
+public:
    typedef typename {{className}}::Stencil Stencil;
 
    static real_t get( const stencil::Direction direction,
@@ -472,14 +473,14 @@ template<>
 struct PressureTensor<{{className}}>
 {
    template< typename FieldPtrOrIterator >
-   static void get( Matrix3< real_t > & pressureTensor, const {{className}} & latticeModel, const FieldPtrOrIterator & it )
+   static void get( Matrix3< real_t > & /* pressureTensor */, const {{className}} & /* latticeModel */, const FieldPtrOrIterator & /* it */ )
    {
        WALBERLA_ABORT("Not implemented");
    }
 
    template< typename PdfField_T >
-   static void get( Matrix3< real_t > & pressureTensor, const {{className}} & latticeModel, const PdfField_T & pdf,
-                    const cell_idx_t x, const cell_idx_t y, const cell_idx_t z )
+   static void get( Matrix3< real_t > & /* pressureTensor */, const {{className}} & /* latticeModel */, const PdfField_T & /* pdf */,
+                    const cell_idx_t /* x */, const cell_idx_t /* y */, const cell_idx_t /* z */ )
    {
        WALBERLA_ABORT("Not implemented");
    }
@@ -490,8 +491,8 @@ template<>
 struct ShearRate<{{className}}>
 {
    template< typename FieldPtrOrIterator >
-   static inline real_t get( const {{className}} & latticeModel, const FieldPtrOrIterator & it,
-                             const Vector3< real_t > & velocity, const real_t rho )
+   static inline real_t get( const {{className}} & /* latticeModel */, const FieldPtrOrIterator & /* it */,
+                             const Vector3< real_t > & /* velocity */, const real_t /* rho */)
    {
        WALBERLA_ABORT("Not implemented");
        return real_t(0.0);
@@ -499,15 +500,15 @@ struct ShearRate<{{className}}>
 
    template< typename PdfField_T >
    static inline real_t get( const {{className}} & latticeModel,
-                             const PdfField_T & pdf, const cell_idx_t x, const cell_idx_t y, const cell_idx_t z,
-                             const Vector3< real_t > & velocity, const real_t rho )
+                             const PdfField_T & /* pdf */, const cell_idx_t /* x */, const cell_idx_t /* y */, const cell_idx_t /* z */,
+                             const Vector3< real_t > & /* velocity */, const real_t /* rho */ )
    {
        WALBERLA_ABORT("Not implemented");
        return real_t(0.0);
    }
 
-   static inline real_t get( const std::vector< real_t > & nonEquilibrium, const real_t relaxationParam,
-                             const real_t rho = real_t(1) )
+   static inline real_t get( const std::vector< real_t > & /* nonEquilibrium */, const real_t /* relaxationParam */,
+                             const real_t /* rho */ = real_t(1) )
    {
        WALBERLA_ABORT("Not implemented");
        return real_t(0.0);

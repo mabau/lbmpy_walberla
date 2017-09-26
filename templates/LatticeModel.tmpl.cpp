@@ -23,6 +23,9 @@
 #include "lbm/field/PdfField.h"
 #include "{{className}}.h"
 
+#ifdef _MSC_VER
+#  pragma warning( disable : 4458 )
+#endif
 
 {% if target is equalto 'cpu' -%}
 #define FUNC_PREFIX
