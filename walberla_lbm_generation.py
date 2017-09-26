@@ -12,6 +12,7 @@ from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
 from pystencils.types import TypedSymbol
 from pystencils_walberla.sweep import KernelInfo
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
+from pystencils.cpu import addOpenMP
 
 from lbmpy.methods.relaxationrates import relaxationRateScaling
 from lbmpy.creationfunctions import createLatticeBoltzmannMethod, updateWithDefaultParameters,\
@@ -132,6 +133,9 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     collideOnlyUpdate = createLatticeBoltzmannUpdateRule(lbMethod=method, optimizationParams=optParams, **params)
     collideAst = createLatticeBoltzmannAst(updateRule=collideOnlyUpdate, optimizationParams=optParams, **params)
     collideAst.functionName = 'kernel_collide'
+
+    addOpenMP(collideAst, numThreads=optParams['openMP'])
+    addOpenMP(streamCollideAst, numThreads=optParams['openMP'])
 
     velSymbols = method.conservedQuantityComputation.firstOrderMomentSymbols
     rhoSym = sp.Symbol("rho")
@@ -257,6 +261,9 @@ class RefinementScaling:
         elif isinstance(parameter, sp.Symbol):
             expr = scalingRule(parameter, self.levelScaleFactor)
             self.scalings.append(('normal', parameter.name, expressionToCode(expr, '')))
+        elif isinstance(parameter, list) or isinstance(parameter, tuple):
+            for p in parameter:
+                self.addScaling(p, scalingRule)
         else:
             raise ValueError("Invalid value for viscosityRelaxationRate")
 
