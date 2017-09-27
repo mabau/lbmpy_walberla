@@ -113,6 +113,11 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
         else:
             raise ValueError("Not called from a .gen.py file and latticeModelName is missing")
 
+    if 'fieldLayout' not in optimizationParams:
+        # usally a numpy layout is chosen by default i.e. xyzf - which is bad for waLBerla where at least the spatial
+        # coordinates should be ordered in reverse direction i.e. zyx
+        optimizationParams['fieldLayout'] = 'fzyx'
+
     params, optParams = updateWithDefaultParameters(kwargs, optimizationParams)
 
     stencilName = params['stencil']
