@@ -106,6 +106,7 @@ public:
         //void stream       ( IBlock * const block, const uint_t numberOfGhostLayersToInclude = uint_t(0) );
         void collide      ( IBlock * const block, const uint_t numberOfGhostLayersToInclude = uint_t(0) );
         void streamCollide( IBlock * const block, const uint_t numberOfGhostLayersToInclude = uint_t(0) );
+        void stream       ( IBlock * const block, const uint_t numberOfGhostLayersToInclude = uint_t(0) );
 
         void operator() ( IBlock * const block, const uint_t numberOfGhostLayersToInclude = uint_t(0) )
         {

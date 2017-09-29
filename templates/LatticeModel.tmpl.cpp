@@ -21,6 +21,7 @@
 #include "core/DataTypes.h"
 #include "core/Macros.h"
 #include "lbm/field/PdfField.h"
+#include "lbm/sweeps/Streaming.h"
 #include "{{className}}.h"
 
 #ifdef _MSC_VER
@@ -40,6 +41,7 @@ namespace {{namespace}} {
 
 {{streamCollideKernel|generateDefinition}}
 {{collideKernel|generateDefinition}}
+{{streamKernel|generateDefinition}}
 
 
 const real_t {{className}}::w[{{Q}}] = { {{weights}} };
@@ -59,16 +61,23 @@ void {{className}}::Sweep::streamCollide( IBlock * block, const uint_t numberOfG
 
 void {{className}}::Sweep::collide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
-    WALBERLA_ASSERT(numberOfGhostLayersToInclude == 0, "Not implemented yet");
-
-    {{collideKernel|generateBlockDataToFieldExtraction(parameters=['pdfs'])|indent(4)}}
+   {{collideKernel|generateBlockDataToFieldExtraction(parameters=['pdfs'])|indent(4)}}
 
     auto & lm = dynamic_cast< lbm::PdfField<{{className}}> * > (pdfs)->latticeModel();
     lm.configureBlock(block);
 
     {{collideKernel|generateRefsForKernelParameters(prefix='lm.', parametersToIgnore=['pdfs', 'pdfs_tmp'])|indent(4) }}
     {{collideKernel|generateCall('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
-    {{collideKernel|generateSwaps|indent(4)}}
+}
+
+
+void {{className}}::Sweep::stream( IBlock * block, const uint_t numberOfGhostLayersToInclude )
+{
+    {{streamKernel|generateBlockDataToFieldExtraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
+
+    {{streamKernel|generateCall('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
+    
+    {{streamKernel|generateSwaps|indent(4)}}
 }
 
 

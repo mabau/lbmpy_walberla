@@ -12,11 +12,12 @@ from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
 from pystencils.types import TypedSymbol
 from pystencils_walberla.sweep import KernelInfo
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
-from pystencils.cpu import addOpenMP
+from pystencils.cpu import addOpenMP, createKernel
 
 from lbmpy.methods.relaxationrates import relaxationRateScaling
 from lbmpy.creationfunctions import createLatticeBoltzmannMethod, updateWithDefaultParameters,\
     createLatticeBoltzmannAst, createLatticeBoltzmannUpdateRule
+from lbmpy.updatekernels import createStreamPullOnlyKernel    
 
 cppPrinter = CustomSympyPrinter()
 
@@ -139,6 +140,12 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     collideAst = createLatticeBoltzmannAst(updateRule=collideOnlyUpdate, optimizationParams=optParams, **params)
     collideAst.functionName = 'kernel_collide'
 
+    streamUpdateRule = createStreamPullOnlyKernel(method.stencil, srcFieldName=params['fieldName'], dstFieldName=params['secondFieldName'],
+                                                  genericLayout=optParams['fieldLayout'])
+    streamAst = createKernel(streamUpdateRule.allEquations)                                                   
+    streamAst.functionName = 'kernel_stream'
+    
+    addOpenMP(streamAst, numThreads=optParams['openMP'])
     addOpenMP(collideAst, numThreads=optParams['openMP'])
     addOpenMP(streamCollideAst, numThreads=optParams['openMP'])
 
@@ -193,6 +200,7 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
 
         'streamCollideKernel': KernelInfo(streamCollideAst, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')]),
         'collideKernel': KernelInfo(collideAst, [], []),
+        'streamKernel': KernelInfo(streamAst, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')]),
         'target': 'cpu',
         'namespace': 'lbm',
     }
