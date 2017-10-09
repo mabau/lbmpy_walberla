@@ -9,7 +9,7 @@ from pystencils.equationcollection.equationcollection import EquationCollection
 from pystencils.sympyextensions import getSymmetricPart
 from pystencils.field import offsetToDirectionString, Field
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
-from pystencils.types import TypedSymbol
+from pystencils.data_types import TypedSymbol
 from pystencils_walberla.sweep import KernelInfo
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
 from pystencils.cpu import addOpenMP, createKernel
