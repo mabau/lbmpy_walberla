@@ -1,2 +1,2 @@
-from .walberla_lbm_generation import generateLatticeModelFiles, RefinementScaling
+from .walberla_lbm_generation import generateLatticeModelFiles, generateLatticeModel, RefinementScaling
 from pystencils import Field
