@@ -74,7 +74,7 @@ def expressionToCode(expr, variablePrefix="lm.", variablesWithoutPrefix=[]):
 
 def equationsToCode(equations, variablePrefix="lm.", variablesWithoutPrefix=[]):
     def typeEq(eq):
-        return eq.subs({s: TypedSymbol(s.name, "real_t") for s in eq.atoms(sp.Symbol)})
+        return eq.subs({s: TypedSymbol(s.name, "double") for s in eq.atoms(sp.Symbol)})
 
     if isinstance(equations, EquationCollection):
         equations = equations.allEquations
