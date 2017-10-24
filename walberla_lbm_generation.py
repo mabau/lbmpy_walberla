@@ -91,7 +91,7 @@ def equationsToCode(equations, variablePrefix="lm.", variablesWithoutPrefix=[]):
     return "\n".join(result)
 
 
-def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinementScaling=None, **kwargs):
+def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinementScaling=None, method=None, **kwargs):
     """
     Creates a waLBerla lattice model consisting of a source and header file
 
@@ -102,6 +102,7 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     :param refinementScaling: dict from parameter symbol (e.g. relaxationRate, force parameter) to an expression
                               how the parameter scales on refined blocks. The refinement factor is represented by
                               the global symbol REFINEMENT_SCALE_FACTOR
+    :param method: optionally pass an already create LB method in here                              
     :return: tuple with code strings (header, sources)
     """
     if latticeModelName is None:
@@ -115,22 +116,21 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
             raise ValueError("Not called from a .gen.py file and latticeModelName is missing")
 
     if 'fieldLayout' not in optimizationParams:
-        # usally a numpy layout is chosen by default i.e. xyzf - which is bad for waLBerla where at least the spatial
+        # usually a numpy layout is chosen by default i.e. xyzf - which is bad for waLBerla where at least the spatial
         # coordinates should be ordered in reverse direction i.e. zyx
         optimizationParams['fieldLayout'] = 'fzyx'
 
     params, optParams = updateWithDefaultParameters(kwargs, optimizationParams)
 
     stencilName = params['stencil']
-    relaxationRates = params['relaxationRates']
 
     if params['forceModel'] != 'none' and params['force'] == (0, 0, 0):
         params['force'] = sp.symbols("force:3")
 
     params['fieldName'] = 'pdfs'
     params['secondFieldName'] = 'pdfs_tmp'
-
-    method = createLatticeBoltzmannMethod(**params)
+    if not method:
+        method = createLatticeBoltzmannMethod(**params)
     streamCollideUpdate = createLatticeBoltzmannUpdateRule(lbMethod=method, optimizationParams=optParams, **params)
     streamCollideAst = createLatticeBoltzmannAst(updateRule=streamCollideUpdate, optimizationParams=optParams, **params)
     streamCollideAst.functionName = 'kernel_streamCollide'
