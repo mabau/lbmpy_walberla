@@ -209,7 +209,7 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
 
     headerFile = env.get_template('LatticeModel.tmpl.h').render(**context)
     cppFile = env.get_template('LatticeModel.tmpl.cpp').render(**context)
-    return headerFile, cppFile
+    return headerFile, cppFile, context
 
 
 def generateLatticeModelFiles(**kwargs):
