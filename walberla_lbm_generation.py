@@ -181,7 +181,6 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
         'compressible': 'true' if params['compressible'] else 'false',
         'weights': ",".join(str(w.evalf()) for w in method.weights),
         'inverseWeights': ",".join(str((1/w).evalf()) for w in method.weights),
-        'relaxationRates': [rr.name for rr in relaxationRates],
 
         'equilibriumAccuracyOrder': params['equilibriumAccuracyOrder'],
 
