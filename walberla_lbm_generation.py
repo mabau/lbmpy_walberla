@@ -91,7 +91,7 @@ def equationsToCode(equations, variablePrefix="lm.", variablesWithoutPrefix=[]):
     return "\n".join(result)
 
 
-def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinementScaling=None, method=None, **kwargs):
+def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinementScaling=None, lbMethod=None, **kwargs):
     """
     Creates a waLBerla lattice model consisting of a source and header file
 
@@ -129,18 +129,18 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
 
     params['fieldName'] = 'pdfs'
     params['secondFieldName'] = 'pdfs_tmp'
-    if not method:
-        method = createLatticeBoltzmannMethod(**params)
-    streamCollideUpdate = createLatticeBoltzmannUpdateRule(lbMethod=method, optimizationParams=optParams, **params)
+    if not lbMethod:
+        lbMethod = createLatticeBoltzmannMethod(**params)
+    streamCollideUpdate = createLatticeBoltzmannUpdateRule(lbMethod=lbMethod, optimizationParams=optParams, **params)
     streamCollideAst = createLatticeBoltzmannAst(updateRule=streamCollideUpdate, optimizationParams=optParams, **params)
     streamCollideAst.functionName = 'kernel_streamCollide'
 
     params['kernelType'] = 'collideOnly'
-    collideOnlyUpdate = createLatticeBoltzmannUpdateRule(lbMethod=method, optimizationParams=optParams, **params)
+    collideOnlyUpdate = createLatticeBoltzmannUpdateRule(lbMethod=lbMethod, optimizationParams=optParams, **params)
     collideAst = createLatticeBoltzmannAst(updateRule=collideOnlyUpdate, optimizationParams=optParams, **params)
     collideAst.functionName = 'kernel_collide'
 
-    streamUpdateRule = createStreamPullOnlyKernel(method.stencil, srcFieldName=params['fieldName'], dstFieldName=params['secondFieldName'],
+    streamUpdateRule = createStreamPullOnlyKernel(lbMethod.stencil, srcFieldName=params['fieldName'], dstFieldName=params['secondFieldName'],
                                                   genericLayout=optParams['fieldLayout'])
     streamAst = createKernel(streamUpdateRule.allEquations)                                                   
     streamAst.functionName = 'kernel_stream'
@@ -149,24 +149,24 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     addOpenMP(collideAst, numThreads=optParams['openMP'])
     addOpenMP(streamCollideAst, numThreads=optParams['openMP'])
 
-    velSymbols = method.conservedQuantityComputation.firstOrderMomentSymbols
+    velSymbols = lbMethod.conservedQuantityComputation.firstOrderMomentSymbols
     rhoSym = sp.Symbol("rho")
-    pdfsSym = sp.symbols("f_:%d" % (len(method.stencil),))
+    pdfsSym = sp.symbols("f_:%d" % (len(lbMethod.stencil),))
     velArrSymbols = [IndexedBase(sp.Symbol('u'), shape=(1,))[i] for i in range(len(velSymbols))]
     momentumDensityArrSymbols = [sp.Symbol("md_%d" % (i,)) for i in range(len(velSymbols))]
 
-    equilibrium = method.getEquilibriumTerms().subs({a: b for a, b in zip(velSymbols, velArrSymbols)})
+    equilibrium = lbMethod.getEquilibriumTerms().subs({a: b for a, b in zip(velSymbols, velArrSymbols)})
     symmetricEquilibrium = getSymmetricPart(equilibrium, velArrSymbols)
     asymmetricEquilibrium = sp.expand(equilibrium - symmetricEquilibrium)
 
-    forceModel = method.forceModel
+    forceModel = lbMethod.forceModel
     macroscopicVelocityShift = None
     if forceModel:
         if hasattr(forceModel, 'macroscopicVelocityShift'):
             macroscopicVelocityShift = [expressionToCode(e, "lm.", ["rho"])
                                         for e in forceModel.macroscopicVelocityShift(rhoSym)]
 
-    cqc = method.conservedQuantityComputation
+    cqc = lbMethod.conservedQuantityComputation
 
     eqInputFromInputEqs = cqc.equilibriumInputEquationsFromInitValues(sp.Symbol("rhoIn"), velArrSymbols)
     densityVelocitySetterMacroscopicValues = equationsToCode(eqInputFromInputEqs, variablesWithoutPrefix=['rhoIn', 'u'])
@@ -176,17 +176,17 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     context = {
         'className': latticeModelName,
         'stencilName': stencilName,
-        'D': method.dim,
-        'Q': len(method.stencil),
+        'D': lbMethod.dim,
+        'Q': len(lbMethod.stencil),
         'compressible': 'true' if params['compressible'] else 'false',
-        'weights': ",".join(str(w.evalf()) for w in method.weights),
-        'inverseWeights': ",".join(str((1/w).evalf()) for w in method.weights),
+        'weights': ",".join(str(w.evalf()) for w in lbMethod.weights),
+        'inverseWeights': ",".join(str((1/w).evalf()) for w in lbMethod.weights),
 
         'equilibriumAccuracyOrder': params['equilibriumAccuracyOrder'],
 
-        'equilibriumFromDirection': stencilSwitchStatement(method.stencil, equilibrium),
-        'symmetricEquilibriumFromDirection': stencilSwitchStatement(method.stencil, symmetricEquilibrium),
-        'asymmetricEquilibriumFromDirection': stencilSwitchStatement(method.stencil, asymmetricEquilibrium),
+        'equilibriumFromDirection': stencilSwitchStatement(lbMethod.stencil, equilibrium),
+        'symmetricEquilibriumFromDirection': stencilSwitchStatement(lbMethod.stencil, symmetricEquilibrium),
+        'asymmetricEquilibriumFromDirection': stencilSwitchStatement(lbMethod.stencil, asymmetricEquilibrium),
         'equilibrium': [cppPrinter.doprint(e) for e in equilibrium],
 
         'macroscopicVelocityShift': macroscopicVelocityShift,
