@@ -226,7 +226,7 @@ def generateLatticeModelFiles(**kwargs):
     else:
         raise ValueError("Not called from a .gen.py file and latticeModelName is missing")
 
-    header, sources = generateLatticeModel(latticeModelName, **kwargs)
+    header, sources, _ = generateLatticeModel(latticeModelName, **kwargs)
 
     with open(latticeModelName + ".h", 'w') as f:
         f.write(header)
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     scaling.addStandardRelaxationRateScaling(omega)
     scaling.addForceScaling(forceField)
 
-    header, cpp = generateLatticeModel(latticeModelName='GenLM', method='srt', stencil='D3Q19',
+    header, cpp, _ = generateLatticeModel(latticeModelName='GenLM', method='srt', stencil='D3Q19',
                                        forceModel='guo', force=force, relaxationRates=[omega],
                                        refinementScaling=scaling)
 
