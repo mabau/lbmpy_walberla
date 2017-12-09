@@ -212,26 +212,18 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     return headerFile, cppFile, context
 
 
-def generateLatticeModelFiles(**kwargs):
+def generateLatticeModelFiles(className, *args, **kwargs):
     """
-    :param kwargs: see documentation of createLatticeBoltzmannAst, additionally 
+    :param kwargs: see documentation of createLatticeBoltzmannAst, additionally
                    an instance of RefinementScaling can be passed with the 'refinementScaling' keyword
     """
-    scriptFileName = inspect.stack()[-1][1]
-    if scriptFileName.endswith(".cuda.gen.py"):
-        raise ValueError("GPU Lattice Model are not yet supported")
-    elif scriptFileName.endswith(".gen.py"):
-        fileName = scriptFileName[:-len(".gen.py")]
-        latticeModelName = os.path.split(fileName)[1]
-    else:
-        raise ValueError("Not called from a .gen.py file and latticeModelName is missing")
+    from pystencils_walberla.cmake_integration import codegen
 
-    header, sources, _ = generateLatticeModel(latticeModelName, **kwargs)
+    def generateLM():
+        header, sources, _ = generateLatticeModel(className, *args, **kwargs)
+        return header, sources
 
-    with open(latticeModelName + ".h", 'w') as f:
-        f.write(header)
-    with open(latticeModelName + ".cpp", 'w') as f:
-        f.write(sources)
+    codegen.register([className + ".h", className + ".cpp"], generateLM)
 
 
 class RefinementScaling:
@@ -279,23 +271,3 @@ class RefinementScaling:
         else:
             raise ValueError("Invalid value for viscosityRelaxationRate")
 
-
-if __name__ == '__main__':
-    from pystencils import Field
-    omega = sp.Symbol("omega")
-
-    forceField = Field.createGeneric('force', spatialDimensions=3, indexDimensions=1, layout='c')
-    force = [forceField(0), forceField(1), forceField(2)]
-
-    scaling = RefinementScaling()
-    scaling.addStandardRelaxationRateScaling(omega)
-    scaling.addForceScaling(forceField)
-
-    header, cpp, _ = generateLatticeModel(latticeModelName='GenLM', method='srt', stencil='D3Q19',
-                                       forceModel='guo', force=force, relaxationRates=[omega],
-                                       refinementScaling=scaling)
-
-    with open("/home/martin/dev/walberla/apps/tutorials/lbm/GenLM.h", 'w') as f:
-        f.write(header)
-    with open("/home/martin/dev/walberla/apps/tutorials/lbm/GenLM.cpp", 'w') as f:
-        f.write(cpp)
