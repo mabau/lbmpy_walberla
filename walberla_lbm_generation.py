@@ -254,7 +254,7 @@ class RefinementScaling:
                 fieldAccess = field(sp.Symbol("f"))
             else:
                 scalingType = 'fieldXYZ'
-                fieldAccess = field.center()
+                fieldAccess = field.center
             expr = scalingRule(fieldAccess, self.levelScaleFactor)
             self.scalings.append((scalingType, name, expressionToCode(expr, '')))
         elif isinstance(parameter, Field.Access):
