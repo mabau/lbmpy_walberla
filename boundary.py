@@ -40,7 +40,6 @@ def structFromNumpyDataType(structName, numpyDtype):
 def createBoundaryClass(boundaryObject, lbMethod, doublePrecision=True, target='cpu'):
     structName = "IndexInfo"
     indexStructDtype = numpyDataTypeForBoundaryObject(boundaryObject, lbMethod.dim)
-    print("indexStructDtype", indexStructDtype.descr)
 
     pdfField = Field.createGeneric('pdfs', lbMethod.dim, np.float64 if doublePrecision else np.float32,
                                    indexDimensions=1, layout='fzyx', indexShape=[len(lbMethod.stencil)])
