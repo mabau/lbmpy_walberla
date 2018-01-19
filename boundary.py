@@ -1,7 +1,7 @@
 import numpy as np
 from jinja2 import Environment, PackageLoader
 
-from pystencils import Field
+from pystencils import Field, FieldType
 from pystencils.data_types import createType, TypedSymbol
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
 
@@ -44,7 +44,7 @@ def createBoundaryClass(boundaryObject, lbMethod, doublePrecision=True, target='
     pdfField = Field.createGeneric('pdfs', lbMethod.dim, np.float64 if doublePrecision else np.float32,
                                    indexDimensions=1, layout='fzyx', indexShape=[len(lbMethod.stencil)])
 
-    indexField = Field('indexVector', indexStructDtype, layout=[0],
+    indexField = Field('indexVector', FieldType.INDEXED, indexStructDtype, layout=[0],
                        shape=(TypedSymbol("indexVectorSize", createType(np.int64)), 1), strides=(1, 1))
 
     kernel = generateIndexBoundaryKernelGeneric(pdfField, indexField, indexStructDtype, lbMethod, boundaryObject,
