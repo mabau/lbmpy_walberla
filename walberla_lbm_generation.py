@@ -102,7 +102,6 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     :param refinementScaling: dict from parameter symbol (e.g. relaxationRate, force parameter) to an expression
                               how the parameter scales on refined blocks. The refinement factor is represented by
                               the global symbol REFINEMENT_SCALE_FACTOR
-    :param method: optionally pass an already create LB method in here                              
     :return: tuple with code strings (header, sources)
     """
     if latticeModelName is None:

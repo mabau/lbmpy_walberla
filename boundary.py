@@ -47,8 +47,7 @@ def createBoundaryClass(boundaryObject, lbMethod, doublePrecision=True, target='
     indexField = Field('indexVector', FieldType.INDEXED, indexStructDtype, layout=[0],
                        shape=(TypedSymbol("indexVectorSize", createType(np.int64)), 1), strides=(1, 1))
 
-    kernel = generateIndexBoundaryKernelGeneric(pdfField, indexField, lbMethod, boundaryObject,
-                                                target=target, createInitializationKernel=False)
+    kernel = generateIndexBoundaryKernelGeneric(pdfField, indexField, lbMethod, boundaryObject, target=target)
 
     stencilInfo = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lbMethod.stencil)]
 
