@@ -130,13 +130,12 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     params['secondFieldName'] = 'pdfs_tmp'
     if not lbMethod:
         lbMethod = createLatticeBoltzmannMethod(**params)
-    streamCollideUpdate = createLatticeBoltzmannUpdateRule(lbMethod=lbMethod, optimizationParams=optParams, **params)
-    streamCollideAst = createLatticeBoltzmannAst(updateRule=streamCollideUpdate, optimizationParams=optParams, **params)
+    del params['lbMethod']
+    streamCollideAst = createLatticeBoltzmannAst(lbMethod=lbMethod, optimizationParams=optParams, **params)
     streamCollideAst.functionName = 'kernel_streamCollide'
 
     params['kernelType'] = 'collideOnly'
-    collideOnlyUpdate = createLatticeBoltzmannUpdateRule(lbMethod=lbMethod, optimizationParams=optParams, **params)
-    collideAst = createLatticeBoltzmannAst(updateRule=collideOnlyUpdate, optimizationParams=optParams, **params)
+    collideAst = createLatticeBoltzmannAst(lbMethod=lbMethod, optimizationParams=optParams, **params)
     collideAst.functionName = 'kernel_collide'
 
     streamUpdateRule = createStreamPullOnlyKernel(lbMethod.stencil, srcFieldName=params['fieldName'], dstFieldName=params['secondFieldName'],
