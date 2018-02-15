@@ -5,8 +5,8 @@ from pystencils import Field, FieldType
 from pystencils.data_types import createType, TypedSymbol
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
 
-from lbmpy.boundaries.boundary_kernel import generateIndexBoundaryKernelGeneric
-from lbmpy.boundaries.createindexlist import numpyDataTypeForBoundaryObject, \
+from lbmpy.boundaries.boundaryhandling import createLatticeBoltzmannBoundaryKernel
+from pystencils.boundaries.createindexlist import numpyDataTypeForBoundaryObject, \
     boundaryIndexArrayCoordinateNames, directionMemberName
 from lbmpy_walberla.walberla_lbm_generation import KernelInfo
 
@@ -47,7 +47,7 @@ def createBoundaryClass(boundaryObject, lbMethod, doublePrecision=True, target='
     indexField = Field('indexVector', FieldType.INDEXED, indexStructDtype, layout=[0],
                        shape=(TypedSymbol("indexVectorSize", createType(np.int64)), 1), strides=(1, 1))
 
-    kernel = generateIndexBoundaryKernelGeneric(pdfField, indexField, lbMethod, boundaryObject, target=target)
+    kernel = createLatticeBoltzmannBoundaryKernel(pdfField, indexField, lbMethod, boundaryObject, target=target)
 
     stencilInfo = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lbMethod.stencil)]
 
