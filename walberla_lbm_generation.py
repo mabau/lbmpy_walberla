@@ -14,9 +14,9 @@ from pystencils_walberla.sweep import KernelInfo
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
 from pystencils.cpu import addOpenMP, createKernel
 
-from lbmpy.methods.relaxationrates import relaxationRateScaling
+from lbmpy.relaxationrates import relaxationRateScaling
 from lbmpy.creationfunctions import createLatticeBoltzmannMethod, updateWithDefaultParameters,\
-    createLatticeBoltzmannAst, createLatticeBoltzmannUpdateRule
+    createLatticeBoltzmannAst
 from lbmpy.updatekernels import createStreamPullOnlyKernel    
 
 cppPrinter = CustomSympyPrinter()
