@@ -133,9 +133,11 @@ private:
 
         if( targetLevel != currentLevel )
         {
-            const real_t powTwoTarget = real_c( uint_t(1) << targetLevel );
-            const real_t powTwoLevel  = real_c( uint_t(1) << currentLevel );
-            const real_t levelScaleFactor = powTwoLevel / powTwoTarget;
+            real_t levelScaleFactor(1);
+            if( currentLevel < targetLevel )
+               levelScaleFactor = real_c( uint_t(1) << ( targetLevel - currentLevel ) );
+            else // currentLevel > targetLevel
+               levelScaleFactor = real_t(1) / real_c( uint_t(1) << ( currentLevel - targetLevel ) );
 
             {% for scalingType, name, expression in refinementLevelScaling.scalings -%}
             {% if scalingType == 'normal' %}
