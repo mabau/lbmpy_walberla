@@ -5,7 +5,7 @@ import os
 import inspect
 
 from pystencils.astnodes import SympyAssignment
-from pystencils.equationcollection.equationcollection import EquationCollection
+from pystencils.assignment_collection.assignment_collection import AssignmentCollection
 from pystencils.sympyextensions import getSymmetricPart
 from pystencils.field import offsetToDirectionString, Field
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
@@ -76,7 +76,7 @@ def equationsToCode(equations, variablePrefix="lm.", variablesWithoutPrefix=[]):
     def typeEq(eq):
         return eq.subs({s: TypedSymbol(s.name, "double") for s in eq.atoms(sp.Symbol)})
 
-    if isinstance(equations, EquationCollection):
+    if isinstance(equations, AssignmentCollection):
         equations = equations.allEquations
 
     variablesWithoutPrefix = list(variablesWithoutPrefix)
