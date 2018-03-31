@@ -6,7 +6,7 @@ import inspect
 
 from pystencils.astnodes import SympyAssignment
 from pystencils.assignment_collection.assignment_collection import AssignmentCollection
-from pystencils.sympyextensions import getSymmetricPart
+from pystencils.sympyextensions import get_symmetric_part
 from pystencils.field import offsetToDirectionString, Field
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
 from pystencils.data_types import TypedSymbol
@@ -77,7 +77,7 @@ def equationsToCode(equations, variablePrefix="lm.", variablesWithoutPrefix=[]):
         return eq.subs({s: TypedSymbol(s.name, "double") for s in eq.atoms(sp.Symbol)})
 
     if isinstance(equations, AssignmentCollection):
-        equations = equations.allEquations
+        equations = equations.all_assignments
 
     variablesWithoutPrefix = list(variablesWithoutPrefix)
     cBackend = CBackend()
@@ -140,7 +140,7 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
 
     streamUpdateRule = createStreamPullOnlyKernel(lbMethod.stencil, srcFieldName=params['fieldName'], dstFieldName=params['secondFieldName'],
                                                   genericLayout=optParams['fieldLayout'])
-    streamAst = createKernel(streamUpdateRule.allEquations)                                                   
+    streamAst = createKernel(streamUpdateRule.all_assignments)
     streamAst.functionName = 'kernel_stream'
     
     addOpenMP(streamAst, numThreads=optParams['openMP'])
@@ -154,7 +154,7 @@ def generateLatticeModel(latticeModelName=None, optimizationParams={}, refinemen
     momentumDensityArrSymbols = [sp.Symbol("md_%d" % (i,)) for i in range(len(velSymbols))]
 
     equilibrium = lbMethod.getEquilibriumTerms().subs({a: b for a, b in zip(velSymbols, velArrSymbols)})
-    symmetricEquilibrium = getSymmetricPart(equilibrium, velArrSymbols)
+    symmetricEquilibrium = get_symmetric_part(equilibrium, velArrSymbols)
     asymmetricEquilibrium = sp.expand(equilibrium - symmetricEquilibrium)
 
     forceModel = lbMethod.forceModel
