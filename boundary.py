@@ -2,7 +2,7 @@ import numpy as np
 from jinja2 import Environment, PackageLoader
 
 from pystencils import Field, FieldType
-from pystencils.data_types import createType, TypedSymbol
+from pystencils.data_types import create_type, TypedSymbol
 from pystencils_walberla.jinja_filters import addPystencilsFiltersToJinjaEnv
 
 from lbmpy.boundaries.boundaryhandling import createLatticeBoltzmannBoundaryKernel
@@ -18,7 +18,7 @@ def structFromNumpyDataType(structName, numpyDtype):
     constructorParams = []
     constructorInitializerList = []
     for name, (subType, offset) in numpyDtype.fields.items():
-        pystencilsType = createType(subType)
+        pystencilsType = create_type(subType)
         result += "    %s %s;\n" % (pystencilsType, name)
         if name in boundaryIndexArrayCoordinateNames or name == directionMemberName:
             constructorParams.append("%s %s_" % (pystencilsType, name))
@@ -45,7 +45,7 @@ def createBoundaryClass(boundaryObject, lbMethod, doublePrecision=True, target='
                                    indexDimensions=1, layout='fzyx', indexShape=[len(lbMethod.stencil)])
 
     indexField = Field('indexVector', FieldType.INDEXED, indexStructDtype, layout=[0],
-                       shape=(TypedSymbol("indexVectorSize", createType(np.int64)), 1), strides=(1, 1))
+                       shape=(TypedSymbol("indexVectorSize", create_type(np.int64)), 1), strides=(1, 1))
 
     kernel = createLatticeBoltzmannBoundaryKernel(pdfField, indexField, lbMethod, boundaryObject, target=target)
 
