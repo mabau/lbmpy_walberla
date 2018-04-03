@@ -53,8 +53,8 @@ public:
     typedef std::vector<{{StructName}}> IndexVector;
 
     {{className}}( const shared_ptr<StructuredBlockForest> & blocks,
-                   {{kernel|generateConstructorParameters(['indexVector', 'indexVectorSize'])}} )
-        : {{ kernel|generateConstructorInitializerList(['indexVector', 'indexVectorSize']) }}
+                   {{kernel|generate_constructor_parameters(['indexVector', 'indexVectorSize'])}} )
+        : {{ kernel|generate_constructor_initializer_list(['indexVector', 'indexVectorSize']) }}
     {
         auto createIdxVector = []( IBlock * const , StructuredBlockStorage * const ) { return new IndexVector(); };
         indexVectorID = blocks->addStructuredBlockData< IndexVector >( createIdxVector, "IndexField_{{className}}");
@@ -88,7 +88,7 @@ public:
             if( ! isFlagSet(it, domainFlag) )
                 continue;
 
-            {%- for dirIdx, offset in stencilInfo %}
+            {%- for dirIdx, offset in stencil_info %}
             {% if dim == 2 -%}
             if ( isFlagSet( it.neighbor({{offset}}, 0), boundaryFlag ) )
                 indexVector->push_back({{StructName}}(it.x(), it.y(), {{dirIdx}} ) );
@@ -102,7 +102,7 @@ public:
 
 private:
     BlockDataID indexVectorID;
-    {{kernel|generateMembers(['indexVector', 'indexVectorSize'])|indent(4)}}
+    {{kernel|generate_members(['indexVector', 'indexVectorSize'])|indent(4)}}
 };
 
 

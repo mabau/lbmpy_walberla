@@ -39,45 +39,45 @@ using namespace std;
 namespace walberla {
 namespace {{namespace}} {
 
-{{streamCollideKernel|generateDefinition}}
-{{collideKernel|generateDefinition}}
-{{streamKernel|generateDefinition}}
+{{stream_collide_kernel|generate_definition}}
+{{collide_kernel|generate_definition}}
+{{stream_kernel|generate_definition}}
 
 
 const real_t {{className}}::w[{{Q}}] = { {{weights}} };
-const real_t {{className}}::wInv[{{Q}}] = { {{inverseWeights}} };
+const real_t {{className}}::wInv[{{Q}}] = { {{inverse_weights}} };
 
 void {{className}}::Sweep::streamCollide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
-    {{streamCollideKernel|generateBlockDataToFieldExtraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
+    {{stream_collide_kernel|generate_block_data_to_field_extraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
 
     auto & lm = dynamic_cast< lbm::PdfField<{{className}}> * > (pdfs)->latticeModel();
     lm.configureBlock(block);
 
-    {{streamCollideKernel|generateRefsForKernelParameters(prefix='lm.', parametersToIgnore=['pdfs', 'pdfs_tmp'])|indent(4) }}
-    {{streamCollideKernel|generateCall('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
-    {{streamCollideKernel|generateSwaps|indent(4)}}
+    {{stream_collide_kernel|generate_refs_for_kernel_parameters(prefix='lm.', parameters_to_ignore=['pdfs', 'pdfs_tmp'])|indent(4) }}
+    {{stream_collide_kernel|generate_call('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
+    {{stream_collide_kernel|generate_swaps|indent(4)}}
 }
 
 void {{className}}::Sweep::collide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
-   {{collideKernel|generateBlockDataToFieldExtraction(parameters=['pdfs'])|indent(4)}}
+   {{collide_kernel|generate_block_data_to_field_extraction(parameters=['pdfs'])|indent(4)}}
 
     auto & lm = dynamic_cast< lbm::PdfField<{{className}}> * > (pdfs)->latticeModel();
     lm.configureBlock(block);
 
-    {{collideKernel|generateRefsForKernelParameters(prefix='lm.', parametersToIgnore=['pdfs', 'pdfs_tmp'])|indent(4) }}
-    {{collideKernel|generateCall('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
+    {{collide_kernel|generate_refs_for_kernel_parameters(prefix='lm.', parameters_to_ignore=['pdfs', 'pdfs_tmp'])|indent(4) }}
+    {{collide_kernel|generate_call('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
 }
 
 
 void {{className}}::Sweep::stream( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
-    {{streamKernel|generateBlockDataToFieldExtraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
+    {{stream_kernel|generate_block_data_to_field_extraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
 
-    {{streamKernel|generateCall('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
+    {{stream_kernel|generate_call('cell_idx_c(numberOfGhostLayersToInclude)')|indent(4)}}
     
-    {{streamKernel|generateSwaps|indent(4)}}
+    {{stream_kernel|generate_swaps|indent(4)}}
 }
 
 

@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU General Public License along
 //  with waLBerla (see COPYING.txt). If not, see <http://www.gnu.org/licenses/>.
 //
-//! \\file {{className}}.cpp
+//! \\file {{class_name}}.cpp
 //! \\ingroup lbm
 //! \\author lbmpy
 //======================================================================================================================
@@ -22,7 +22,7 @@
 
 #include "core/DataTypes.h"
 #include "core/Macros.h"
-#include "{{className}}.h"
+#include "{{class_name}}.h"
 
 
 {% if target is equalto 'cpu' -%}
@@ -41,21 +41,21 @@ namespace {{namespace}} {
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
 
-{{kernel|generateDefinition}}
+{{kernel|generate_definition}}
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
 
-void {{className}}::operator() ( IBlock * block )
+void {{class_name}}::operator() ( IBlock * block )
 {
     auto  * indexVector = block->getData<IndexVector>(indexVectorID);
 
     int64_t indexVectorSize = int64_c( indexVector->size() );
     uint8_t * fd_indexVector = reinterpret_cast<uint8_t*>(&(*indexVector)[0]);
-    {{kernel|generateBlockDataToFieldExtraction(['indexVector', 'indexVectorSize'])|indent(4)}}
-    {{kernel|generateCall|indent(4)}}
+    {{kernel|generate_block_data_to_field_extraction(['indexVector', 'indexVectorSize'])|indent(4)}}
+    {{kernel|generate_call|indent(4)}}
 }
 
 
