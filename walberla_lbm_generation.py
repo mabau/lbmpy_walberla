@@ -100,7 +100,7 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
                              called from a .gen.py file and the filename is taken as lattice model name
     :param optimization: see documentation of create_lb_ast
     :param kwargs: see documentation of create_lb_ast
-    :param refinement_scaling: dict from parameter symbol (e.g. relaxationRate, force parameter) to an expression
+    :param refinement_scaling: dict from parameter symbol (e.g. relaxation_rate, force parameter) to an expression
                               how the parameter scales on refined blocks. The refinement factor is represented by
                               the global symbol REFINEMENT_SCALE_FACTOR
     :return: tuple with code strings (header, sources)
