@@ -6,8 +6,8 @@ from pystencils.data_types import create_type, TypedSymbol
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
 
 from lbmpy.boundaries.boundaryhandling import create_lattice_boltzmann_boundary_kernel
-from pystencils.boundaries.createindexlist import numpyDataTypeForBoundaryObject, \
-    boundaryIndexArrayCoordinateNames, directionMemberName
+from pystencils.boundaries.createindexlist import numpy_data_type_for_boundary_object, \
+    boundary_index_array_coordinate_names, direction_member_name
 from lbmpy_walberla.walberla_lbm_generation import KernelInfo
 
 
@@ -17,10 +17,10 @@ def struct_from_numpy_dtype(struct_name, numpy_dtype):
     equality_compare = []
     constructor_params = []
     constructor_initializer_list = []
-    for name, (subType, offset) in numpy_dtype.fields.items():
-        pystencils_type = create_type(subType)
+    for name, (sub_type, offset) in numpy_dtype.fields.items():
+        pystencils_type = create_type(sub_type)
         result += "    %s %s;\n" % (pystencils_type, name)
-        if name in boundaryIndexArrayCoordinateNames or name == directionMemberName:
+        if name in boundary_index_array_coordinate_names or name == direction_member_name:
             constructor_params.append("%s %s_" % (pystencils_type, name))
             constructor_initializer_list.append("%s(%s_)" % (name, name))
         else:
@@ -30,7 +30,8 @@ def struct_from_numpy_dtype(struct_name, numpy_dtype):
         else:
             equality_compare.append("%s == o.%s" % (name, name))
 
-    result += "    %s(%s) : %s {}\n" % (struct_name, ", ".join(constructor_params), ", ".join(constructor_initializer_list))
+    result += "    %s(%s) : %s {}\n" % \
+              (struct_name, ", ".join(constructor_params), ", ".join(constructor_initializer_list))
     result += "    bool operator==(const %s & o) const {\n        return %s;\n    }\n" % \
               (struct_name, " && ".join(equality_compare))
     result += "};\n"
@@ -39,7 +40,7 @@ def struct_from_numpy_dtype(struct_name, numpy_dtype):
 
 def create_boundary_class(boundary_object, lb_method, double_precision=True, target='cpu'):
     struct_name = "IndexInfo"
-    index_struct_dtype = numpyDataTypeForBoundaryObject(boundary_object, lb_method.dim)
+    index_struct_dtype = numpy_data_type_for_boundary_object(boundary_object, lb_method.dim)
 
     pdf_field = Field.create_generic('pdfs', lb_method.dim, np.float64 if double_precision else np.float32,
                                      index_dimensions=1, layout='fzyx', index_shape=[len(lb_method.stencil)])
@@ -52,7 +53,7 @@ def create_boundary_class(boundary_object, lb_method, double_precision=True, tar
     stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lb_method.stencil)]
 
     context = {
-        'className': boundary_object.name,
+        'class_name': boundary_object.name,
         'StructName': struct_name,
         'StructDeclaration': struct_from_numpy_dtype(struct_name, index_struct_dtype),
         'kernel': KernelInfo(kernel, [], []),

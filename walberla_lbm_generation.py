@@ -19,25 +19,25 @@ from lbmpy.creationfunctions import create_lb_method, update_with_default_parame
     create_lb_ast
 from lbmpy.updatekernels import create_stream_pull_only_kernel
 
-cppPrinter = CustomSympyPrinter()
+cpp_printer = CustomSympyPrinter()
 
 
-REFINEMENT_SCALE_FACTOR = sp.Symbol("levelScaleFactor")
+REFINEMENT_SCALE_FACTOR = sp.Symbol("level_scale_factor")
 
 
 def stencil_switch_statement(stencil, values):
     template = Template("""
     using namespace stencil;
     switch( direction ) {
-        {% for directionName, value in dir_to_value_dict.items() -%}
-            case {{directionName}}: return {{value}};
+        {% for direction_name, value in dir_to_value_dict.items() -%}
+            case {{direction_name}}: return {{value}};
         {% endfor -%}
         default:
             WALBERLA_ABORT("Invalid Direction");
     }
     """)
 
-    dir_to_value_dict = {offset_to_direction_string(d): cppPrinter.doprint(v) for d, v in zip(stencil, values)}
+    dir_to_value_dict = {offset_to_direction_string(d): cpp_printer.doprint(v) for d, v in zip(stencil, values)}
     return template.render(dir_to_value_dict=dir_to_value_dict)
 
 
@@ -69,7 +69,7 @@ def expression_to_code(expr, variable_prefix="lm.", variables_without_prefix=[])
     :param variables_without_prefix: this variables are not prefixed
     :return: code string
     """
-    return cppPrinter.doprint(field_and_symbol_substitute(expr, variable_prefix, variables_without_prefix))
+    return cpp_printer.doprint(field_and_symbol_substitute(expr, variable_prefix, variables_without_prefix))
 
 
 def equations_to_code(equations, variable_prefix="lm.", variables_without_prefix=[]):
@@ -94,7 +94,7 @@ def equations_to_code(equations, variable_prefix="lm.", variables_without_prefix
 def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_scaling=None,
                            lb_method=None, **kwargs):
     """
-    Creates a waLBerla lattice model consisting of a source and header file
+    Creates a walberla lattice model consisting of a source and header file
 
     :param lattice_model_name: name of the generated lattice model class. If None, it is assumed that this function was
                              called from a .gen.py file and the filename is taken as lattice model name
@@ -168,9 +168,9 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
 
     cqc = lb_method.conserved_quantity_computation
 
-    eq_input_from_input_eqs = cqc.equilibrium_input_equations_from_init_values(sp.Symbol("rhoIn"), vel_arr_symbols)
+    eq_input_from_input_eqs = cqc.equilibrium_input_equations_from_init_values(sp.Symbol("rho_in"), vel_arr_symbols)
     density_velocity_setter_macroscopic_values = equations_to_code(eq_input_from_input_eqs,
-                                                                   variables_without_prefix=['rhoIn', 'u'])
+                                                                   variables_without_prefix=['rho_in', 'u'])
     momentum_density_getter = cqc.output_equations_from_pdfs(pdfs_sym, {'density': rho_sym,
                                                                         'momentum_density': momentum_density_symbols})
 
@@ -188,7 +188,7 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
         'equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, equilibrium),
         'symmetric_equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, symmetric_equilibrium),
         'asymmetric_equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, asymmetric_equilibrium),
-        'equilibrium': [cppPrinter.doprint(e) for e in equilibrium],
+        'equilibrium': [cpp_printer.doprint(e) for e in equilibrium],
 
         'macroscopic_velocity_shift': macroscopic_velocity_shift,
         'density_getters': equations_to_code(cqc.output_equations_from_pdfs(pdfs_sym, {"density": rho_sym}),
@@ -216,7 +216,7 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
 def generate_lattice_model_files(class_name, *args, **kwargs):
     """
     :param kwargs: see documentation of create_lb_ast, additionally
-                   an instance of RefinementScaling can be passed with the 'refinementScaling' keyword
+                   an instance of RefinementScaling can be passed with the 'refinement_scaling' keyword
     """
     from pystencils_walberla.cmake_integration import codegen
 
@@ -228,7 +228,7 @@ def generate_lattice_model_files(class_name, *args, **kwargs):
 
 
 class RefinementScaling:
-    levelScaleFactor = sp.Symbol("levelScaleFactor")
+    level_scale_factor = sp.Symbol("level_scale_factor")
 
     def __init__(self):
         self.scaling_info = []
@@ -256,18 +256,18 @@ class RefinementScaling:
             else:
                 scaling_type = 'field_xyz'
                 field_access = field.center
-            expr = scaling_rule(field_access, self.levelScaleFactor)
+            expr = scaling_rule(field_access, self.level_scale_factor)
             self.scaling_info.append((scaling_type, name, expression_to_code(expr, '')))
         elif isinstance(parameter, Field.Access):
             field_access = parameter
-            expr = scaling_rule(field_access, self.levelScaleFactor)
+            expr = scaling_rule(field_access, self.level_scale_factor)
             name = field_access.field.name
             self.scaling_info.append(('field_xyz', name, expression_to_code(expr, '')))
         elif isinstance(parameter, sp.Symbol):
-            expr = scaling_rule(parameter, self.levelScaleFactor)
+            expr = scaling_rule(parameter, self.level_scale_factor)
             self.scaling_info.append(('normal', parameter.name, expression_to_code(expr, '')))
         elif isinstance(parameter, list) or isinstance(parameter, tuple):
             for p in parameter:
                 self.add_scaling(p, scaling_rule)
         else:
-            raise ValueError("Invalid value for viscosityRelaxationRate")
+            raise ValueError("Invalid value for viscosity_relaxation_rate")
