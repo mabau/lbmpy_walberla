@@ -13,7 +13,7 @@
 //  You should have received a copy of the GNU General Public License along
 //  with waLBerla (see COPYING.txt). If not, see <http://www.gnu.org/licenses/>.
 //
-//! \\file {{className}}.h
+//! \\file {{class_name}}.h
 //! \\author pystencils
 //======================================================================================================================
 
@@ -45,19 +45,19 @@ namespace walberla {
 namespace {{namespace}} {
 
 
-class {{className}}
+class {{class_name}}
 {
 public:
     {{StructDeclaration|indent(4)}}
 
     typedef std::vector<{{StructName}}> IndexVector;
 
-    {{className}}( const shared_ptr<StructuredBlockForest> & blocks,
+    {{class_name}}( const shared_ptr<StructuredBlockForest> & blocks,
                    {{kernel|generate_constructor_parameters(['indexVector', 'indexVectorSize'])}} )
         : {{ kernel|generate_constructor_initializer_list(['indexVector', 'indexVectorSize']) }}
     {
         auto createIdxVector = []( IBlock * const , StructuredBlockStorage * const ) { return new IndexVector(); };
-        indexVectorID = blocks->addStructuredBlockData< IndexVector >( createIdxVector, "IndexField_{{className}}");
+        indexVectorID = blocks->addStructuredBlockData< IndexVector >( createIdxVector, "IndexField_{{class_name}}");
     };
 
     void operator() ( IBlock * block );

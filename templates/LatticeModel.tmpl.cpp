@@ -22,7 +22,7 @@
 #include "core/Macros.h"
 #include "lbm/field/PdfField.h"
 #include "lbm/sweeps/Streaming.h"
-#include "{{className}}.h"
+#include "{{class_name}}.h"
 
 #ifdef _MSC_VER
 #  pragma warning( disable : 4458 )
@@ -44,14 +44,14 @@ namespace {{namespace}} {
 {{stream_kernel|generate_definition}}
 
 
-const real_t {{className}}::w[{{Q}}] = { {{weights}} };
-const real_t {{className}}::wInv[{{Q}}] = { {{inverse_weights}} };
+const real_t {{class_name}}::w[{{Q}}] = { {{weights}} };
+const real_t {{class_name}}::wInv[{{Q}}] = { {{inverse_weights}} };
 
-void {{className}}::Sweep::streamCollide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
+void {{class_name}}::Sweep::streamCollide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
     {{stream_collide_kernel|generate_block_data_to_field_extraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
 
-    auto & lm = dynamic_cast< lbm::PdfField<{{className}}> * > (pdfs)->latticeModel();
+    auto & lm = dynamic_cast< lbm::PdfField<{{class_name}}> * > (pdfs)->latticeModel();
     lm.configureBlock(block);
 
     {{stream_collide_kernel|generate_refs_for_kernel_parameters(prefix='lm.', parameters_to_ignore=['pdfs', 'pdfs_tmp'])|indent(4) }}
@@ -59,11 +59,11 @@ void {{className}}::Sweep::streamCollide( IBlock * block, const uint_t numberOfG
     {{stream_collide_kernel|generate_swaps|indent(4)}}
 }
 
-void {{className}}::Sweep::collide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
+void {{class_name}}::Sweep::collide( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
    {{collide_kernel|generate_block_data_to_field_extraction(parameters=['pdfs'])|indent(4)}}
 
-    auto & lm = dynamic_cast< lbm::PdfField<{{className}}> * > (pdfs)->latticeModel();
+    auto & lm = dynamic_cast< lbm::PdfField<{{class_name}}> * > (pdfs)->latticeModel();
     lm.configureBlock(block);
 
     {{collide_kernel|generate_refs_for_kernel_parameters(prefix='lm.', parameters_to_ignore=['pdfs', 'pdfs_tmp'])|indent(4) }}
@@ -71,7 +71,7 @@ void {{className}}::Sweep::collide( IBlock * block, const uint_t numberOfGhostLa
 }
 
 
-void {{className}}::Sweep::stream( IBlock * block, const uint_t numberOfGhostLayersToInclude )
+void {{class_name}}::Sweep::stream( IBlock * block, const uint_t numberOfGhostLayersToInclude )
 {
     {{stream_kernel|generate_block_data_to_field_extraction(parameters=['pdfs', 'pdfs_tmp'])|indent(4)}}
 
@@ -92,13 +92,13 @@ void {{className}}::Sweep::stream( IBlock * block, const uint_t numberOfGhostLay
 namespace walberla {
 namespace mpi {
 
-mpi::SendBuffer & operator<< (mpi::SendBuffer & buf, const ::walberla::{{namespace}}::{{className}} & lm)
+mpi::SendBuffer & operator<< (mpi::SendBuffer & buf, const ::walberla::{{namespace}}::{{class_name}} & lm)
 {
     buf << lm.currentLevel;
     return buf;
 }
 
-mpi::RecvBuffer & operator>> (mpi::RecvBuffer & buf, ::walberla::{{namespace}}::{{className}} & lm)
+mpi::RecvBuffer & operator>> (mpi::RecvBuffer & buf, ::walberla::{{namespace}}::{{class_name}} & lm)
 {
     buf >> lm.currentLevel;
     return buf;

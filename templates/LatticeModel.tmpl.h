@@ -96,7 +96,7 @@ public:
     static const real_t wInv[{{Q}}];
 
     static const bool compressible = {{compressible}};
-    static const int equilibriumAccuracyOrder = {{equilibriumAccuracyOrder}};
+    static const int equilibriumAccuracyOrder = {{equilibrium_order}};
 
     class Sweep
     {
@@ -133,11 +133,11 @@ private:
 
         if( targetLevel != currentLevel )
         {
-            real_t levelScaleFactor(1);
+            real_t level_scale_factor(1);
             if( currentLevel < targetLevel )
-               levelScaleFactor = real_c( uint_t(1) << ( targetLevel - currentLevel ) );
+               level_scale_factor = real_c( uint_t(1) << ( targetLevel - currentLevel ) );
             else // currentLevel > targetLevel
-               levelScaleFactor = real_t(1) / real_c( uint_t(1) << ( currentLevel - targetLevel ) );
+               level_scale_factor = real_t(1) / real_c( uint_t(1) << ( currentLevel - targetLevel ) );
 
             {% for scalingType, name, expression in refinement_scaling.scaling_info -%}
             {% if scalingType == 'normal' %}
@@ -342,7 +342,7 @@ struct DensityAndVelocity<{{class_name}}>
 {
     template< typename FieldPtrOrIterator >
     static void set( FieldPtrOrIterator & it, const {{class_name}} & lm,
-                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rhoIn = real_t(1.0) )
+                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rho_in = real_t(1.0) )
     {
         auto x = it.x();
         auto y = it.y();
@@ -358,7 +358,7 @@ struct DensityAndVelocity<{{class_name}}>
 
     template< typename PdfField_T >
     static void set( PdfField_T & pdf, const cell_idx_t x, const cell_idx_t y, const cell_idx_t z, const {{class_name}} & lm,
-                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rhoIn = real_t(1.0) )
+                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rho_in = real_t(1.0) )
     {
         {{density_velocity_setter_macroscopic_values | indent(8)}}
         {% if D == 2 -%}
@@ -376,7 +376,7 @@ struct DensityAndVelocityRange<{{class_name}}, FieldIteratorXYZ>
 {
 
    static void set( FieldIteratorXYZ & begin, const FieldIteratorXYZ & end, const {{class_name}} & lm,
-                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rhoIn = real_t(1.0) )
+                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rho_in = real_t(1.0) )
    {
         for( auto cellIt = begin; cellIt != end; ++cellIt )
         {
