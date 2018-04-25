@@ -4,8 +4,8 @@ from jinja2 import Environment, PackageLoader, Template
 import os
 import inspect
 
+from pystencils import AssignmentCollection
 from pystencils.astnodes import SympyAssignment
-from pystencils.assignment_collection.assignment_collection import AssignmentCollection
 from pystencils.sympyextensions import get_symmetric_part
 from pystencils.field import offset_to_direction_string, Field
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
