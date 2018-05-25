@@ -219,7 +219,7 @@ public:
         {% if compressible == 'false' %}
         rho -= real_t(1.0);
         {% endif %}
-        {{symmetricEquilibriumFromDirection}}
+        {{symmetric_equilibrium_from_direction}}
    }
 
    static real_t getAsymmetricPart( const stencil::Direction direction,
