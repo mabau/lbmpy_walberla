@@ -5,14 +5,6 @@ from pystencils import TypedSymbol, create_kernel
 
 
 class ListLbGenerator:
-    """
-    >>> from lbmpy.creationfunctions import create_lb_collision_rule
-    >>> from pystencils import show_code
-    >>> g = ListLbGenerator(create_lb_collision_rule())
-    >>> kernel_code = str(show_code(g.kernel()))
-    >>> setter_code = str(show_code(g.setter_ast()))
-    >>> getter_code = str(show_code(g.getter_ast()))
-    """
     def __init__(self, collision_rule, pdf_type=np.float64, index_type=np.uint32, layout='SoA'):
         self.collision_rule = collision_rule
 
