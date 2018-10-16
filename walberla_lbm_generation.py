@@ -7,7 +7,8 @@ import inspect
 from pystencils import AssignmentCollection
 from pystencils.astnodes import SympyAssignment
 from pystencils.sympyextensions import get_symmetric_part
-from pystencils.field import offset_to_direction_string, Field
+from pystencils.field import Field
+from pystencils.stencils import offset_to_direction_string
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
 from pystencils.data_types import TypedSymbol
 from pystencils_walberla.sweep import KernelInfo
@@ -198,9 +199,9 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
 
         'refinement_scaling': refinement_scaling,
 
-        'stream_collide_kernel': KernelInfo(stream_collide_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')]),
-        'collide_kernel': KernelInfo(collide_ast, [], []),
-        'stream_kernel': KernelInfo(stream_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')]),
+        'stream_collide_kernel': KernelInfo(stream_collide_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')], []),
+        'collide_kernel': KernelInfo(collide_ast, [], [], []),
+        'stream_kernel': KernelInfo(stream_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')], []),
         'target': 'cpu',
         'namespace': 'lbm',
     }
