@@ -114,7 +114,7 @@ public:
         }
 
     private:
-        BlockDataID pdfsID;
+        {{stream_collide_kernel|generate_members(only_fields=True)|indent(8)}}
     };
 
     {{class_name}}( {{stream_collide_kernel|generate_constructor_parameters(lmIgnores) }} )
