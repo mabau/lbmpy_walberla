@@ -2,6 +2,7 @@ import sympy as sp
 from sympy.tensor import IndexedBase
 from jinja2 import Environment, PackageLoader, Template
 import os
+import numpy as np
 import inspect
 
 from pystencils import AssignmentCollection
@@ -10,7 +11,8 @@ from pystencils.sympyextensions import get_symmetric_part
 from pystencils.field import Field
 from pystencils.stencils import offset_to_direction_string
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
-from pystencils.data_types import TypedSymbol
+from pystencils.data_types import TypedSymbol, cast_func, create_type
+from pystencils.transformations import add_types
 from pystencils_walberla.sweep import KernelInfo
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
 from pystencils.cpu import add_openmp, create_kernel
@@ -73,9 +75,9 @@ def expression_to_code(expr, variable_prefix="lm.", variables_without_prefix=[])
     return cpp_printer.doprint(field_and_symbol_substitute(expr, variable_prefix, variables_without_prefix))
 
 
-def equations_to_code(equations, variable_prefix="lm.", variables_without_prefix=[]):
+def equations_to_code(equations, variable_prefix="lm.", variables_without_prefix=[], dtype="double"):
     def type_eq(eq):
-        return eq.subs({s: TypedSymbol(s.name, "double") for s in eq.atoms(sp.Symbol)})
+        return eq.subs({s: TypedSymbol(s.name, dtype) for s in eq.atoms(sp.Symbol)})
 
     if isinstance(equations, AssignmentCollection):
         equations = equations.all_assignments
@@ -97,14 +99,17 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
     """
     Creates a walberla lattice model consisting of a source and header file
 
-    :param lattice_model_name: name of the generated lattice model class. If None, it is assumed that this function was
-                             called from a .gen.py file and the filename is taken as lattice model name
-    :param optimization: see documentation of create_lb_ast
-    :param kwargs: see documentation of create_lb_ast
-    :param refinement_scaling: dict from parameter symbol (e.g. relaxation_rate, force parameter) to an expression
-                              how the parameter scales on refined blocks. The refinement factor is represented by
-                              the global symbol REFINEMENT_SCALE_FACTOR
-    :return: tuple with code strings (header, sources)
+    Args:
+        lattice_model_name: name of the generated lattice model class. If None, it is assumed that this function was
+                          called from a .gen.py file and the filename is taken as lattice model name
+        optimization: see documentation of create_lb_ast
+        kwargs: see documentation of create_lb_ast
+        refinement_scaling: dict from parameter symbol (e.g. relaxation_rate, force parameter) to an expression
+                           how the parameter scales on refined blocks. The refinement factor is represented by
+                           the global symbol REFINEMENT_SCALE_FACTOR
+
+    Returns:
+        tuple with code strings (header, sources)
     """
     if lattice_model_name is None:
         script_file_name = inspect.stack()[-1][1]
@@ -121,9 +126,10 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
         # coordinates should be ordered in reverse direction i.e. zyx
         optimization['field_layout'] = 'fzyx'
 
-    params, opt_params = update_with_default_parameters(kwargs, optimization)
+    params, opt_params = update_with_default_parameters(kwargs.copy(), optimization.copy())
 
     stencil_name = params['stencil']
+    is_float = not opt_params['double_precision']
 
     if params['force_model'] != 'none' and params['force'] == (0, 0, 0):
         params['force'] = sp.symbols("force:3")
@@ -133,6 +139,7 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
     if not lb_method:
         lb_method = create_lb_method(**params)
     del params['lb_method']
+
     stream_collide_ast = create_lb_ast(lb_method=lb_method, optimization=opt_params, **params)
     stream_collide_ast.function_name = 'kernel_streamCollide'
 
@@ -140,8 +147,10 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
     collide_ast = create_lb_ast(lb_method=lb_method, optimization=opt_params, **params)
     collide_ast.function_name = 'kernel_collide'
 
+    dtype = np.float32 if is_float else np.float64
     stream_update_rule = create_stream_pull_only_kernel(lb_method.stencil, src_field_name=params['field_name'],
                                                         dst_field_name=params['temporary_field_name'],
+                                                        generic_field_type=dtype,
                                                         generic_layout=opt_params['field_layout'])
     stream_ast = create_kernel(stream_update_rule.all_assignments)
     stream_ast.function_name = 'kernel_stream'
@@ -156,7 +165,11 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
     vel_arr_symbols = [IndexedBase(sp.Symbol('u'), shape=(1,))[i] for i in range(len(vel_symbols))]
     momentum_density_symbols = [sp.Symbol("md_%d" % (i,)) for i in range(len(vel_symbols))]
 
-    equilibrium = lb_method.get_equilibrium_terms().subs({a: b for a, b in zip(vel_symbols, vel_arr_symbols)})
+    equilibrium = lb_method.get_equilibrium()
+    equilibrium = equilibrium.new_with_substitutions({a: b for a, b in zip(vel_symbols, vel_arr_symbols)})
+    _, _, equilibrium = add_types(equilibrium.main_assignments, "float32" if is_float else "float64", False)
+    equilibrium = sp.Matrix([e.rhs for e in equilibrium])
+
     symmetric_equilibrium = get_symmetric_part(equilibrium, vel_arr_symbols)
     asymmetric_equilibrium = sp.expand(equilibrium - symmetric_equilibrium)
 
@@ -170,10 +183,11 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
     cqc = lb_method.conserved_quantity_computation
 
     eq_input_from_input_eqs = cqc.equilibrium_input_equations_from_init_values(sp.Symbol("rho_in"), vel_arr_symbols)
-    density_velocity_setter_macroscopic_values = equations_to_code(eq_input_from_input_eqs,
+    density_velocity_setter_macroscopic_values = equations_to_code(eq_input_from_input_eqs, dtype=dtype,
                                                                    variables_without_prefix=['rho_in', 'u'])
     momentum_density_getter = cqc.output_equations_from_pdfs(pdfs_sym, {'density': rho_sym,
                                                                         'momentum_density': momentum_density_symbols})
+    constant_suffix = "f" if is_float else ""
 
     context = {
         'class_name': lattice_model_name,
@@ -181,8 +195,8 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
         'D': lb_method.dim,
         'Q': len(lb_method.stencil),
         'compressible': 'true' if params['compressible'] else 'false',
-        'weights': ",".join(str(w.evalf()) for w in lb_method.weights),
-        'inverse_weights': ",".join(str((1/w).evalf()) for w in lb_method.weights),
+        'weights': ",".join(str(w.evalf()) + constant_suffix for w in lb_method.weights),
+        'inverse_weights': ",".join(str((1/w).evalf()) + constant_suffix for w in lb_method.weights),
 
         'equilibrium_order': params['equilibrium_order'],
 
@@ -193,8 +207,9 @@ def generate_lattice_model(lattice_model_name=None, optimization={}, refinement_
 
         'macroscopic_velocity_shift': macroscopic_velocity_shift,
         'density_getters': equations_to_code(cqc.output_equations_from_pdfs(pdfs_sym, {"density": rho_sym}),
-                                             variables_without_prefix=[e.name for e in pdfs_sym]),
-        'momentum_density_getter': equations_to_code(momentum_density_getter, variables_without_prefix=pdfs_sym),
+                                             variables_without_prefix=[e.name for e in pdfs_sym], dtype=dtype),
+        'momentum_density_getter': equations_to_code(momentum_density_getter, variables_without_prefix=pdfs_sym,
+                                                     dtype=dtype),
         'density_velocity_setter_macroscopic_values': density_velocity_setter_macroscopic_values,
 
         'refinement_scaling': refinement_scaling,

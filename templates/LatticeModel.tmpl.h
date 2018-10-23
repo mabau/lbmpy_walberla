@@ -289,23 +289,29 @@ struct Equilibrium< {{class_name}}, void >
 
    template< typename FieldPtrOrIterator >
    static void set( FieldPtrOrIterator & it,
-                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rho = real_t(1.0) )
+                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), real_t rho = real_t(1.0) )
    {
-       {% for eqTerm in equilibrium -%}
-          it[{{loop.index0 }}] = {{eqTerm}};
-       {% endfor -%}
+        {%if compressible == 'false' %}
+        rho -= real_t(1.0);
+        {%endif %}
 
+       {% for eqTerm in equilibrium -%}
+       it[{{loop.index0 }}] = {{eqTerm}};
+       {% endfor -%}
    }
 
    template< typename PdfField_T >
    static void set( PdfField_T & pdf, const cell_idx_t x, const cell_idx_t y, const cell_idx_t z,
-                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), const real_t rho = real_t(1.0) )
+                    const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), real_t rho = real_t(1.0) )
    {
+      {%if compressible == 'false' %}
+      rho -= real_t(1.0);
+      {%endif %}
+
       real_t & xyz0 = pdf(x,y,z,0);
       {% for eqTerm in equilibrium -%}
-         pdf.getF( &xyz0, {{loop.index0 }})= {{eqTerm}};
+      pdf.getF( &xyz0, {{loop.index0 }})= {{eqTerm}};
       {% endfor -%}
-
    }
 };
 
@@ -353,7 +359,7 @@ struct DensityAndVelocity<{{class_name}}>
         const real_t u_2(0.0);
         {% endif %}
 
-        Equilibrium<{{class_name}}>::set(it, Vector3<real_t>(u_0, u_1, u_2), rho);
+        Equilibrium<{{class_name}}>::set(it, Vector3<real_t>(u_0, u_1, u_2), rho{%if compressible %} + real_t(1) {%endif%});
     }
 
     template< typename PdfField_T >
@@ -365,8 +371,7 @@ struct DensityAndVelocity<{{class_name}}>
         const real_t u_2(0.0);
         {% endif %}
 
-
-        Equilibrium<{{class_name}}>::set(pdf, x, y, z, Vector3<real_t>(u_0, u_1, u_2), rho);
+        Equilibrium<{{class_name}}>::set(pdf, x, y, z, Vector3<real_t>(u_0, u_1, u_2), rho {%if compressible %} + real_t(1) {%endif%});
     }
 };
 
@@ -388,7 +393,7 @@ struct DensityAndVelocityRange<{{class_name}}, FieldIteratorXYZ>
             const real_t u_2(0.0);
             {% endif %}
 
-            Equilibrium<{{class_name}}>::set(cellIt, Vector3<real_t>(u_0, u_1, u_2), rho);
+            Equilibrium<{{class_name}}>::set(cellIt, Vector3<real_t>(u_0, u_1, u_2), rho{%if compressible %} + real_t(1) {%endif%});
         }
    }
 };
