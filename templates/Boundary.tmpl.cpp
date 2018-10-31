@@ -23,11 +23,14 @@
 #include "core/DataTypes.h"
 #include "core/Macros.h"
 #include "{{class_name}}.h"
+{% if target == 'gpu' -%}
+#include "cuda/ErrorChecking.h"
+{%- endif %}
 
 
-{% if target is equalto 'cpu' -%}
+{% if target == 'cpu' -%}
 #define FUNC_PREFIX
-{%- elif target is equalto 'gpu' -%}
+{%- elif target == 'gpu' -%}
 #define FUNC_PREFIX __global__
 {%- endif %}
 
@@ -39,6 +42,8 @@ namespace {{namespace}} {
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wconversion"
 #endif
 
 {{kernel|generate_definition}}
@@ -50,14 +55,14 @@ namespace {{namespace}} {
 
 void {{class_name}}::operator() ( IBlock * block )
 {
-    auto  * indexVector = block->getData<IndexVector>(indexVectorID);
+    auto * indexVectors = block->getData<IndexVectors>(indexVectorID);
+    auto & indexVector = indexVectors->{{target}};
+    int64_t indexVectorSize = int64_c( indexVectors->cpu.size() );
+    uint8_t * fd_indexVector = reinterpret_cast<uint8_t*>(&indexVector[0]);
 
-    int64_t indexVectorSize = int64_c( indexVector->size() );
-    uint8_t * fd_indexVector = reinterpret_cast<uint8_t*>(&(*indexVector)[0]);
     {{kernel|generate_block_data_to_field_extraction(['indexVector', 'indexVectorSize'])|indent(4)}}
-    {{kernel|generate_call|indent(4)}}
+    {{kernel|generate_call(spatial_shape_symbols=['indexVectorSize'])|indent(4)}}
 }
-
 
 
 } // namespace {{namespace}}

@@ -50,14 +50,32 @@ class {{class_name}}
 public:
     {{StructDeclaration|indent(4)}}
 
-    typedef std::vector<{{StructName}}> IndexVector;
+    struct IndexVectors
+    {
+        bool operator==(IndexVectors & other) { return cpu == other.cpu; }
+
+        std::vector<{{StructName}}> cpu;
+        {% if target == 'gpu' -%}
+        {{StructName}} * gpu;
+
+        ~IndexVectors() { cudaFree(gpu); }
+        IndexVectors() : gpu(nullptr) {}
+
+        void syncGPU()
+        {
+            cudaFree( gpu );
+            cudaMalloc( &gpu, sizeof({{StructName}}) * cpu.size() );
+            cudaMemcpy( gpu, &cpu[0], sizeof({{StructName}}) * cpu.size(), cudaMemcpyHostToDevice  );
+        }
+        {% endif %}
+    };
 
     {{class_name}}( const shared_ptr<StructuredBlockForest> & blocks,
                    {{kernel|generate_constructor_parameters(['indexVector', 'indexVectorSize'])}} )
         : {{ kernel|generate_constructor_initializer_list(['indexVector', 'indexVectorSize']) }}
     {
-        auto createIdxVector = []( IBlock * const , StructuredBlockStorage * const ) { return new IndexVector(); };
-        indexVectorID = blocks->addStructuredBlockData< IndexVector >( createIdxVector, "IndexField_{{class_name}}");
+        auto createIdxVector = []( IBlock * const , StructuredBlockStorage * const ) { return new IndexVectors(); };
+        indexVectorID = blocks->addStructuredBlockData< IndexVectors >( createIdxVector, "IndexField_{{class_name}}");
     };
 
     void operator() ( IBlock * block );
@@ -75,13 +93,17 @@ public:
     void fillFromFlagField( IBlock * block, ConstBlockDataID flagFieldID,
                             FlagUID boundaryFlagUID, FlagUID domainFlagUID )
     {
-        auto * indexVector = block->getData< IndexVector > ( indexVectorID );
+        auto * indexVectors = block->getData< IndexVectors > ( indexVectorID );
+        auto & indexVector = indexVectors->cpu;
         auto * flagField = block->getData< FlagField_T > ( flagFieldID );
 
         auto boundaryFlag = flagField->getFlag(boundaryFlagUID);
         auto domainFlag = flagField->getFlag(domainFlagUID);
 
-        indexVector->clear();
+        indexVector.clear();
+        {% if target == 'gpu' %}
+        cudaFree( indexVectors->gpu );
+        {% endif %}
 
         for( auto it = flagField->begin(); it != flagField->end(); ++it )
         {
@@ -91,17 +113,22 @@ public:
             {%- for dirIdx, offset in stencil_info %}
             {% if dim == 2 -%}
             if ( isFlagSet( it.neighbor({{offset}}, 0), boundaryFlag ) )
-                indexVector->push_back({{StructName}}(it.x(), it.y(), {{dirIdx}} ) );
+                indexVector.push_back({{StructName}}(it.x(), it.y(), {{dirIdx}} ) );
             {%- elif dim == 3 -%}
             if ( isFlagSet( it.neighbor({{offset}}), boundaryFlag ) )
-                indexVector->push_back({{StructName}}(it.x(), it.y(), it.z(), {{dirIdx}} ) );
+                indexVector.push_back({{StructName}}(it.x(), it.y(), it.z(), {{dirIdx}} ) );
             {%- endif -%}
             {% endfor %}
         }
+
+        {% if target == 'gpu' %}
+        indexVectors->syncGPU();
+        {% endif %}
     }
 
 private:
     BlockDataID indexVectorID;
+
     {{kernel|generate_members(['indexVector', 'indexVectorSize'])|indent(4)}}
 };
 
