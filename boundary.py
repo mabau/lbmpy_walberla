@@ -49,6 +49,7 @@ def create_boundary_class(boundary_object, lb_method, double_precision=True, tar
                         shape=(TypedSymbol("indexVectorSize", create_type(np.int64)), 1), strides=(1, 1))
 
     kernel = create_lattice_boltzmann_boundary_kernel(pdf_field, index_field, lb_method, boundary_object, target=target)
+    kernel.function_name = "boundary_" + boundary_object.name
 
     stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lb_method.stencil)]
 

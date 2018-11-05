@@ -50,25 +50,57 @@ class {{class_name}}
 public:
     {{StructDeclaration|indent(4)}}
 
-    struct IndexVectors
+
+    class IndexVectors
     {
-        bool operator==(IndexVectors & other) { return cpu == other.cpu; }
+    public:
+        using CpuIndexVector = std::vector<{{StructName}}>;
 
-        std::vector<{{StructName}}> cpu;
+        enum Type {
+            ALL = 0,
+            INNER = 1,
+            OUTER = 2,
+            NUM_TYPES = 3
+        };
+
+        IndexVectors() : cpuVectors_(NUM_TYPES)  {}
+        bool operator==(IndexVectors & other) { return other.cpuVectors_ == cpuVectors_; }
+
         {% if target == 'gpu' -%}
-        {{StructName}} * gpu;
+        ~IndexVectors() {
+            for( auto & gpuVec: gpuVectors_)
+                cudaFree( gpuVec );
+        }
+        {% endif %}
 
-        ~IndexVectors() { cudaFree(gpu); }
-        IndexVectors() : gpu(nullptr) {}
+        CpuIndexVector & indexVector(Type t) { return cpuVectors_[t]; }
+        {{StructName}} * pointerCpu(Type t)  { return &(cpuVectors_[t][0]); }
+        {{StructName}} * pointerGpu(Type t)  { return gpuVectors_[t]; }
 
         void syncGPU()
         {
-            cudaFree( gpu );
-            cudaMalloc( &gpu, sizeof({{StructName}}) * cpu.size() );
-            cudaMemcpy( gpu, &cpu[0], sizeof({{StructName}}) * cpu.size(), cudaMemcpyHostToDevice  );
+            {% if target == 'gpu' -%}
+            gpuVectors_.resize( cpuVectors_.size() );
+            for(int i=0; i < NUM_TYPES; ++i )
+            {
+                auto & gpuVec = gpuVectors_[i];
+                auto & cpuVec = cpuVectors_[i];
+                cudaFree( gpuVec );
+                cudaMalloc( &gpuVec, sizeof({{StructName}}) * cpuVec.size() );
+                cudaMemcpy( gpuVec, &cpuVec[0], sizeof({{StructName}}) * cpuVec.size(), cudaMemcpyHostToDevice );
+            }
+            {% endif %}
         }
+
+    private:
+        std::vector<CpuIndexVector> cpuVectors_;
+
+        {% if target == 'gpu' -%}
+        using GpuIndexVector = {{StructName}} *;
+        std::vector<GpuIndexVector> gpuVectors_;
         {% endif %}
     };
+
 
     {{class_name}}( const shared_ptr<StructuredBlockForest> & blocks,
                    {{kernel|generate_constructor_parameters(['indexVector', 'indexVectorSize'])}} )
@@ -78,7 +110,10 @@ public:
         indexVectorID = blocks->addStructuredBlockData< IndexVectors >( createIdxVector, "IndexField_{{class_name}}");
     };
 
-    void operator() ( IBlock * block );
+    void operator() ( IBlock * block, cudaStream_t stream = 0 );
+    void inner( IBlock * block, cudaStream_t stream = 0 );
+    void outer( IBlock * block, cudaStream_t stream = 0 );
+
 
     template<typename FlagField_T>
     void fillFromFlagField( const shared_ptr<StructuredBlockForest> & blocks, ConstBlockDataID flagFieldID,
@@ -94,16 +129,23 @@ public:
                             FlagUID boundaryFlagUID, FlagUID domainFlagUID )
     {
         auto * indexVectors = block->getData< IndexVectors > ( indexVectorID );
-        auto & indexVector = indexVectors->cpu;
+        auto & indexVectorAll = indexVectors->indexVector(IndexVectors::ALL);
+        auto & indexVectorInner = indexVectors->indexVector(IndexVectors::INNER);
+        auto & indexVectorOuter = indexVectors->indexVector(IndexVectors::OUTER);
+
+
         auto * flagField = block->getData< FlagField_T > ( flagFieldID );
 
         auto boundaryFlag = flagField->getFlag(boundaryFlagUID);
         auto domainFlag = flagField->getFlag(domainFlagUID);
 
-        indexVector.clear();
-        {% if target == 'gpu' %}
-        cudaFree( indexVectors->gpu );
-        {% endif %}
+        auto inner = flagField->xyzSize();
+        inner.expand( cell_idx_t(-1) );
+
+
+        indexVectorAll.clear();
+        indexVectorInner.clear();
+        indexVectorOuter.clear();
 
         for( auto it = flagField->begin(); it != flagField->end(); ++it )
         {
@@ -111,22 +153,24 @@ public:
                 continue;
 
             {%- for dirIdx, offset in stencil_info %}
-            {% if dim == 2 -%}
-            if ( isFlagSet( it.neighbor({{offset}}, 0), boundaryFlag ) )
-                indexVector.push_back({{StructName}}(it.x(), it.y(), {{dirIdx}} ) );
-            {%- elif dim == 3 -%}
-            if ( isFlagSet( it.neighbor({{offset}}), boundaryFlag ) )
-                indexVector.push_back({{StructName}}(it.x(), it.y(), it.z(), {{dirIdx}} ) );
-            {%- endif -%}
+            if ( isFlagSet( it.neighbor({{offset}} {%if dim == 3%}, 0 {%endif %}), boundaryFlag ) )
+            {
+                auto element = {{StructName}}(it.x(), it.y(), {%if dim == 3%} it.z(), {%endif %} {{dirIdx}} );
+                indexVectorAll.push_back( element );
+                if( inner.contains( it.x(), it.y(), it.z() ) )
+                    indexVectorInner.push_back( element );
+                else
+                    indexVectorOuter.push_back( element );
+            }
             {% endfor %}
         }
 
-        {% if target == 'gpu' %}
         indexVectors->syncGPU();
-        {% endif %}
     }
 
 private:
+    void run( IBlock * block, IndexVectors::Type type, cudaStream_t stream );
+
     BlockDataID indexVectorID;
 
     {{kernel|generate_members(['indexVector', 'indexVectorSize'])|indent(4)}}
