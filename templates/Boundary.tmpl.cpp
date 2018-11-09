@@ -53,7 +53,7 @@ namespace {{namespace}} {
 #endif
 
 
-void {{class_name}}::run( IBlock * block, IndexVectors::Type type, cudaStream_t stream )
+void {{class_name}}::run( IBlock * block, IndexVectors::Type type {% if target == 'gpu'%}, cudaStream_t stream {%endif%})
 {
     auto * indexVectors = block->getData<IndexVectors>(indexVectorID);
 
@@ -67,25 +67,25 @@ void {{class_name}}::run( IBlock * block, IndexVectors::Type type, cudaStream_t 
     if( indexVectorSize == 0)
         return;
 
-    uint8_t * fd_indexVector = reinterpret_cast<uint8_t*>(pointer);
+    uint8_t * _data_indexVector = reinterpret_cast<uint8_t*>(pointer);
 
     {{kernel|generate_block_data_to_field_extraction(['indexVector', 'indexVectorSize'])|indent(4)}}
     {{kernel|generate_call(spatial_shape_symbols=['indexVectorSize'], stream='stream')|indent(4)}}
 }
 
-void {{class_name}}::operator() ( IBlock * block, cudaStream_t stream )
+void {{class_name}}::operator() ( IBlock * block{% if target == 'gpu'%}, cudaStream_t stream {%endif%} )
 {
-    run( block, IndexVectors::ALL, stream );
+    run( block, IndexVectors::ALL{% if target == 'gpu'%}, stream {%endif%});
 }
 
-void {{class_name}}::inner( IBlock * block, cudaStream_t stream )
+void {{class_name}}::inner( IBlock * block{% if target == 'gpu'%}, cudaStream_t stream {%endif%} )
 {
-    run( block, IndexVectors::INNER, stream );
+    run( block, IndexVectors::INNER{% if target == 'gpu'%}, stream {%endif%} );
 }
 
-void {{class_name}}::outer( IBlock * block, cudaStream_t stream )
+void {{class_name}}::outer( IBlock * block{% if target == 'gpu'%}, cudaStream_t stream {%endif%} )
 {
-    run( block, IndexVectors::OUTER, stream );
+    run( block, IndexVectors::OUTER{% if target == 'gpu'%}, stream {%endif%} );
 }
 
 

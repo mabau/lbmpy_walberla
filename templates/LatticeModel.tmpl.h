@@ -51,7 +51,7 @@
 #endif
 
 
-{% set lmIgnores = ['pdfs', 'pdfs_tmp'] %}
+{% set lmIgnores = ('pdfs', 'pdfs_tmp') %}
 
 
 // Forward declarations

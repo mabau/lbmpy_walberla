@@ -75,7 +75,10 @@ public:
 
         CpuIndexVector & indexVector(Type t) { return cpuVectors_[t]; }
         {{StructName}} * pointerCpu(Type t)  { return &(cpuVectors_[t][0]); }
+
+        {% if target == 'gpu' -%}
         {{StructName}} * pointerGpu(Type t)  { return gpuVectors_[t]; }
+        {% endif %}
 
         void syncGPU()
         {
@@ -89,7 +92,7 @@ public:
                 cudaMalloc( &gpuVec, sizeof({{StructName}}) * cpuVec.size() );
                 cudaMemcpy( gpuVec, &cpuVec[0], sizeof({{StructName}}) * cpuVec.size(), cudaMemcpyHostToDevice );
             }
-            {% endif %}
+            {%- endif %}
         }
 
     private:
@@ -110,9 +113,9 @@ public:
         indexVectorID = blocks->addStructuredBlockData< IndexVectors >( createIdxVector, "IndexField_{{class_name}}");
     };
 
-    void operator() ( IBlock * block, cudaStream_t stream = 0 );
-    void inner( IBlock * block, cudaStream_t stream = 0 );
-    void outer( IBlock * block, cudaStream_t stream = 0 );
+    void operator() ( IBlock * block {% if target == 'gpu'%}, cudaStream_t stream = 0 {%endif%});
+    void inner( IBlock * block {% if target == 'gpu'%}, cudaStream_t stream = 0 {%endif%});
+    void outer( IBlock * block {% if target == 'gpu'%}, cudaStream_t stream = 0 {%endif%});
 
 
     template<typename FlagField_T>
@@ -169,11 +172,11 @@ public:
     }
 
 private:
-    void run( IBlock * block, IndexVectors::Type type, cudaStream_t stream );
+    void run( IBlock * block, IndexVectors::Type type{% if target == 'gpu'%}, cudaStream_t stream = 0 {%endif%});
 
     BlockDataID indexVectorID;
 
-    {{kernel|generate_members(['indexVector', 'indexVectorSize'])|indent(4)}}
+    {{kernel|generate_members(('indexVector', 'indexVectorSize'))|indent(4)}}
 };
 
 

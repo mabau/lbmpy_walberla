@@ -57,7 +57,7 @@ def create_boundary_class(boundary_object, lb_method, double_precision=True, tar
         'class_name': boundary_object.name,
         'StructName': struct_name,
         'StructDeclaration': struct_from_numpy_dtype(struct_name, index_struct_dtype),
-        'kernel': KernelInfo(kernel, [], [], []),
+        'kernel': KernelInfo(kernel),
         'stencil_info': stencil_info,
         'dim': lb_method.dim,
         'target': target,
