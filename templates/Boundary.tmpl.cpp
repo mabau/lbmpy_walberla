@@ -46,10 +46,20 @@ namespace {{namespace}} {
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
 
+#ifdef __CUDACC__
+#pragma push
+#pragma diag_suppress = declared_but_not_referenced
+#endif
+
+
 {{kernel|generate_definition}}
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
+
+#ifdef __CUDACC__
+#pragma pop
 #endif
 
 
@@ -91,3 +101,5 @@ void {{class_name}}::outer( IBlock * block{% if target == 'gpu'%}, cudaStream_t 
 
 } // namespace {{namespace}}
 } // namespace walberla
+
+

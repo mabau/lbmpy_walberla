@@ -50,6 +50,11 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
+#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif
 
 {% set lmIgnores = ('pdfs', 'pdfs_tmp') %}
 
@@ -531,4 +536,8 @@ struct ShearRate<{{class_name}}>
 
 #ifdef WALBERLA_CXX_COMPILER_IS_GNU
 #pragma GCC diagnostic pop
+#endif
+
+#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
+#pragma clang diagnostic pop
 #endif

@@ -34,6 +34,21 @@
 #define FUNC_PREFIX __global__
 {%- endif %}
 
+#ifdef WALBERLA_CXX_COMPILER_IS_GNU
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
+
+#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wshadow"
+#endif
+
+
 using namespace std;
 
 namespace walberla {
@@ -108,3 +123,10 @@ mpi::RecvBuffer & operator>> (mpi::RecvBuffer & buf, ::walberla::{{namespace}}::
 } // namespace mpi
 } // namespace walberla
 
+#ifdef WALBERLA_CXX_COMPILER_IS_GNU
+#pragma GCC diagnostic pop
+#endif
+
+#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
+#pragma clang diagnostic pop
+#endif
