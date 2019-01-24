@@ -1,5 +1,4 @@
-from .walberla_lbm_generation import generate_lattice_model_files, generate_lattice_model, RefinementScaling, \
-    create_lb_method
-from pystencils import Field
+from .walberla_lbm_generation import generate_lattice_model, RefinementScaling
+from .boundary import generate_boundary
 
-__all__ = ['Field', 'generate_lattice_model_files', 'generate_lattice_model', 'RefinementScaling', 'create_lb_method']
+__all__ = ['generate_lattice_model', 'RefinementScaling', 'generate_boundary']

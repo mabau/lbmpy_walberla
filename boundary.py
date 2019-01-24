@@ -3,12 +3,57 @@ from jinja2 import Environment, PackageLoader
 
 from pystencils import Field, FieldType
 from pystencils.data_types import create_type, TypedSymbol
+from pystencils_walberla.codegen import default_create_kernel_parameters
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
 
 from lbmpy.boundaries.boundaryhandling import create_lattice_boltzmann_boundary_kernel
 from pystencils.boundaries.createindexlist import numpy_data_type_for_boundary_object, \
     boundary_index_array_coordinate_names, direction_member_name
 from lbmpy_walberla.walberla_lbm_generation import KernelInfo
+
+
+def generate_boundary(generation_context, class_name, boundary_object, lb_method, **create_kernel_params):
+    struct_name = "IndexInfo"
+    boundary_object.name = class_name
+
+    create_kernel_params = default_create_kernel_parameters(generation_context, create_kernel_params)
+    target = create_kernel_params['target']
+
+    index_struct_dtype = numpy_data_type_for_boundary_object(boundary_object, lb_method.dim)
+
+    pdf_field = Field.create_generic('pdfs', lb_method.dim,
+                                     np.float64 if generation_context.double_accuracy else np.float32,
+                                     index_dimensions=1, layout='fzyx', index_shape=[len(lb_method.stencil)])
+
+    index_field = Field('indexVector', FieldType.INDEXED, index_struct_dtype, layout=[0],
+                        shape=(TypedSymbol("indexVectorSize", create_type(np.int64)), 1), strides=(1, 1))
+
+    kernel = create_lattice_boltzmann_boundary_kernel(pdf_field, index_field, lb_method, boundary_object, target=target,
+                                                      openmp=generation_context.openmp)
+    kernel.function_name = "boundary_" + boundary_object.name
+
+    stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lb_method.stencil)]
+
+    context = {
+        'class_name': boundary_object.name,
+        'StructName': struct_name,
+        'StructDeclaration': struct_from_numpy_dtype(struct_name, index_struct_dtype),
+        'kernel': KernelInfo(kernel),
+        'stencil_info': stencil_info,
+        'dim': lb_method.dim,
+        'target': target,
+        'namespace': 'lbm',
+    }
+
+    env = Environment(loader=PackageLoader('lbmpy_walberla'))
+    add_pystencils_filters_to_jinja_env(env)
+
+    header = env.get_template('Boundary.tmpl.h').render(**context)
+    source = env.get_template('Boundary.tmpl.cpp').render(**context)
+
+    source_extension = "cpp" if create_kernel_params.get("target", "cpu") == "cpu" else "cu"
+    generation_context.write_file("{}.h".format(class_name), header)
+    generation_context.write_file("{}.{}".format(class_name, source_extension), source)
 
 
 def struct_from_numpy_dtype(struct_name, numpy_dtype):
@@ -36,49 +81,3 @@ def struct_from_numpy_dtype(struct_name, numpy_dtype):
               (struct_name, " && ".join(equality_compare))
     result += "};\n"
     return result
-
-
-def create_boundary_class(boundary_object, lb_method, double_precision=True, target='cpu'):
-    struct_name = "IndexInfo"
-    index_struct_dtype = numpy_data_type_for_boundary_object(boundary_object, lb_method.dim)
-
-    pdf_field = Field.create_generic('pdfs', lb_method.dim, np.float64 if double_precision else np.float32,
-                                     index_dimensions=1, layout='fzyx', index_shape=[len(lb_method.stencil)])
-
-    index_field = Field('indexVector', FieldType.INDEXED, index_struct_dtype, layout=[0],
-                        shape=(TypedSymbol("indexVectorSize", create_type(np.int64)), 1), strides=(1, 1))
-
-    kernel = create_lattice_boltzmann_boundary_kernel(pdf_field, index_field, lb_method, boundary_object, target=target)
-    kernel.function_name = "boundary_" + boundary_object.name
-
-    stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lb_method.stencil)]
-
-    context = {
-        'class_name': boundary_object.name,
-        'StructName': struct_name,
-        'StructDeclaration': struct_from_numpy_dtype(struct_name, index_struct_dtype),
-        'kernel': KernelInfo(kernel),
-        'stencil_info': stencil_info,
-        'dim': lb_method.dim,
-        'target': target,
-        'namespace': 'lbm',
-    }
-
-    env = Environment(loader=PackageLoader('lbmpy_walberla'))
-    add_pystencils_filters_to_jinja_env(env)
-
-    header_file = env.get_template('Boundary.tmpl.h').render(**context)
-    cpp_file = env.get_template('Boundary.tmpl.cpp').render(**context)
-    return header_file, cpp_file
-
-
-if __name__ == '__main__':
-    from lbmpy.boundaries import UBB
-    from lbmpy.creationfunctions import create_lb_method
-
-    boundary = UBB(lambda: 0, dim=2)
-    method = create_lb_method(stencil='D2Q9', method='srt')
-    header, source = create_boundary_class(boundary, method)
-    print(source)
-
-
