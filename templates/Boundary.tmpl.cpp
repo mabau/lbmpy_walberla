@@ -66,16 +66,15 @@ namespace {{namespace}} {
 void {{class_name}}::run( IBlock * block, IndexVectors::Type type {% if target == 'gpu'%}, cudaStream_t stream {%endif%})
 {
     auto * indexVectors = block->getData<IndexVectors>(indexVectorID);
+    int64_t indexVectorSize = int64_c( indexVectors->indexVector(type).size() );
+    if( indexVectorSize == 0)
+        return;
 
     {% if target == 'gpu' -%}
     auto pointer = indexVectors->pointerGpu(type);
     {% else %}
     auto pointer = indexVectors->pointerCpu(type);
     {% endif %}
-
-    int64_t indexVectorSize = int64_c( indexVectors->indexVector(type).size() );
-    if( indexVectorSize == 0)
-        return;
 
     uint8_t * _data_indexVector = reinterpret_cast<uint8_t*>(pointer);
 
