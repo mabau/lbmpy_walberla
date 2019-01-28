@@ -59,9 +59,9 @@ using namespace std;
 namespace walberla {
 namespace {{namespace}} {
 
-{{stream_collide_kernel|generate_definition}}
-{{collide_kernel|generate_definition}}
-{{stream_kernel|generate_definition}}
+{{stream_collide_kernel|generate_definition(target)}}
+{{collide_kernel|generate_definition(target)}}
+{{stream_kernel|generate_definition(target)}}
 
 
 const real_t {{class_name}}::w[{{Q}}] = { {{weights}} };
