@@ -9,7 +9,7 @@ from pystencils.astnodes import SympyAssignment
 from pystencils.sympyextensions import get_symmetric_part
 from pystencils.field import Field
 from pystencils.stencils import offset_to_direction_string, stencils_have_same_entries
-from pystencils.backends.cbackend import CustomSympyPrinter, CBackend
+from pystencils.backends.cbackend import CustomSympyPrinter, CBackend, get_headers
 from pystencils.data_types import TypedSymbol
 from pystencils.transformations import add_types
 from pystencils_walberla.codegen import KernelInfo, default_create_kernel_parameters
@@ -92,6 +92,8 @@ def generate_lattice_model(generation_context, class_name, lb_method, refinement
                                                                         'momentum_density': momentum_density_symbols})
     constant_suffix = "f" if is_float else ""
 
+    required_headers = get_headers(stream_collide_ast)
+
     jinja_context = {
         'class_name': class_name,
         'stencil_name': stencil_name,
@@ -122,6 +124,7 @@ def generate_lattice_model(generation_context, class_name, lb_method, refinement
         'stream_kernel': KernelInfo(stream_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')], []),
         'target': 'cpu',
         'namespace': 'lbm',
+        'headers': required_headers,
     }
 
     env = Environment(loader=PackageLoader('lbmpy_walberla'))
