@@ -20,7 +20,7 @@ from lbmpy.relaxationrates import relaxation_rate_scaling
 from lbmpy.creationfunctions import update_with_default_parameters, create_lb_update_rule
 from lbmpy.updatekernels import create_stream_pull_only_kernel
 
-cpp_printer = CustomSympyPrinter()
+cpp_printer = CustomSympyPrinter(dialect='c')
 REFINEMENT_SCALE_FACTOR = sp.Symbol("level_scale_factor")
 
 
