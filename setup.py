@@ -1,6 +1,12 @@
+import os
+import sys
 from setuptools import setup, find_packages
+sys.path.insert(0, os.path.abspath('..'))
+from custom_pypi_index.pypi_index import get_current_dev_version_from_git
+
 
 setup(name='lbmpy_walberla',
+      version=get_current_dev_version_from_git(),
       description='Code Generation for Lattice Boltzmann Methods in the walberla framework',
       author='Martin Bauer',
       license='AGPLv3',
@@ -10,5 +16,4 @@ setup(name='lbmpy_walberla',
       install_requires=['lbmpy', 'pystencils_walberla'],
       package_dir={'lbmpy_walberla': 'lbmpy_walberla'},
       package_data={'lbmpy_walberla': ['templates/*']},
-      version_format='{tag}.dev{commits}+{sha}',
       )
