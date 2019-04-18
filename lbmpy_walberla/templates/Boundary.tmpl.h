@@ -139,6 +139,9 @@ public:
 
         auto * flagField = block->getData< FlagField_T > ( flagFieldID );
 
+        if( !(flagField->flagExists(boundaryFlagUID) && flagField->flagExists(domainFlagUID) ))
+            return;
+
         auto boundaryFlag = flagField->getFlag(boundaryFlagUID);
         auto domainFlag = flagField->getFlag(domainFlagUID);
 
