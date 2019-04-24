@@ -39,18 +39,13 @@
 #define FUNC_PREFIX __global__
 {%- endif %}
 
-#ifdef WALBERLA_CXX_COMPILER_IS_GNU
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wshadow"
-#endif
-
-#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wshadow"
+#if ( defined WALBERLA_CXX_COMPILER_IS_GNU ) || ( defined WALBERLA_CXX_COMPILER_IS_CLANG )
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wfloat-equal"
+#   pragma GCC diagnostic ignored "-Wshadow"
+#   pragma GCC diagnostic ignored "-Wconversion"
+#   pragma GCC diagnostic ignored "-Wunused-variable"
+#   pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 
 
@@ -128,10 +123,6 @@ mpi::RecvBuffer & operator>> (mpi::RecvBuffer & buf, ::walberla::{{namespace}}::
 } // namespace mpi
 } // namespace walberla
 
-#ifdef WALBERLA_CXX_COMPILER_IS_GNU
-#pragma GCC diagnostic pop
-#endif
-
-#ifdef WALBERLA_CXX_COMPILER_IS_CLANG
-#pragma clang diagnostic pop
+#if ( defined WALBERLA_CXX_COMPILER_IS_GNU ) || ( defined WALBERLA_CXX_COMPILER_IS_CLANG )
+#   pragma GCC diagnostic pop
 #endif
