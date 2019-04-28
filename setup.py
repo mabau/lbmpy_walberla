@@ -43,5 +43,5 @@ setup(name='lbmpy_walberla',
       install_requires=['lbmpy', 'pystencils_walberla'],
       package_dir={'lbmpy_walberla': 'lbmpy_walberla'},
       package_data={'lbmpy_walberla': ['templates/*']},
-      test_suite='pystencils_walberla_tests',
+      test_suite='lbmpy_walberla_tests',
       )
