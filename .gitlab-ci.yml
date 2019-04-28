@@ -1,0 +1,11 @@
+
+tests:
+  image: i10git.cs.fau.de:5005/software/pystencils/full
+  script:
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils.git@master#egg=pystencils
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils_walberla.git@master#egg=pystencils_walberla
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/lbmpy.git@master#egg=lbmpy
+    - python3 setup.py test
+  tags:
+    - docker
+    - AVX
