@@ -1,6 +1,6 @@
 
 tests:
-  image: i10git.cs.fau.de:5005/software/pystencils/full
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/full
   script:
     - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils.git@master#egg=pystencils
     - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils_walberla.git@master#egg=pystencils_walberla
