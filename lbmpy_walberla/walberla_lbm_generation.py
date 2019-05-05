@@ -8,7 +8,7 @@ from pystencils import AssignmentCollection
 from pystencils.astnodes import SympyAssignment
 from pystencils.sympyextensions import get_symmetric_part
 from pystencils.field import Field
-from pystencils.stencils import offset_to_direction_string, stencils_have_same_entries
+from pystencils.stencil import offset_to_direction_string, have_same_entries
 from pystencils.backends.cbackend import CustomSympyPrinter, CBackend, get_headers
 from pystencils.data_types import TypedSymbol
 from pystencils.transformations import add_types
@@ -255,5 +255,5 @@ def equations_to_code(equations, variable_prefix="lm.", variables_without_prefix
 
 def get_stencil_name(stencil):
     for name in ('D2Q9', 'D3Q15', 'D3Q19', 'D3Q27'):
-        if stencils_have_same_entries(stencil, get_stencil(name, 'walberla')):
+        if have_same_entries(stencil, get_stencil(name, 'walberla')):
             return name
