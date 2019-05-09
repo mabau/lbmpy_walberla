@@ -24,7 +24,7 @@ cpp_printer = CustomSympyPrinter(dialect='c')
 REFINEMENT_SCALE_FACTOR = sp.Symbol("level_scale_factor")
 
 
-def generate_lattice_model(generation_context, class_name, lb_method, refinement_scaling=None,
+def generate_lattice_model(generation_context, class_name, lb_method, refinement_scaling=None, update_rule_params={},
                            **create_kernel_params):
 
     # usually a numpy layout is chosen by default i.e. xyzf - which is bad for waLBerla where at least the spatial
@@ -36,7 +36,8 @@ def generate_lattice_model(generation_context, class_name, lb_method, refinement
         raise ValueError("Lattice Models can only be generated for CPUs. To generate LBM on GPUs use sweeps directly")
 
     is_float = not generation_context.double_accuracy
-    params, opt_params = update_with_default_parameters({'lb_method': lb_method}, optimization)
+    update_rule_params['lb_method'] = lb_method
+    params, opt_params = update_with_default_parameters(update_rule_params, optimization)
 
     stencil_name = get_stencil_name(lb_method.stencil)
     if not stencil_name:
