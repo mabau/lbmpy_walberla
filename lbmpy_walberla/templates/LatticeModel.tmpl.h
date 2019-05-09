@@ -128,6 +128,9 @@ public:
 
     void configure( IBlock & block, StructuredBlockStorage &)  { configureBlock( &block ); }
 
+    // Parameters:
+    {{stream_collide_kernel|generate_members(lmIgnores)|indent(4)}}
+
 private:
     void configureBlock(IBlock * block)
     {
@@ -166,9 +169,6 @@ private:
         }
         {% endif -%}
     }
-
-    // Parameters:
-    {{stream_collide_kernel|generate_members(lmIgnores)|indent(4)}}
 
     // Updated by configureBlock:
     {{stream_collide_kernel|generate_block_data_to_field_extraction(lmIgnores, declarations_only=True)|indent(4)}}
