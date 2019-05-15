@@ -100,7 +100,7 @@ def generate_lattice_model(generation_context, class_name, lb_method, refinement
         'stencil_name': stencil_name,
         'D': lb_method.dim,
         'Q': len(lb_method.stencil),
-        'compressible': 'true' if params['compressible'] else 'false',
+        'compressible': lb_method.conserved_quantity_computation.compressible,
         'weights': ",".join(str(w.evalf()) + constant_suffix for w in lb_method.weights),
         'inverse_weights': ",".join(str((1/w).evalf()) + constant_suffix for w in lb_method.weights),
 

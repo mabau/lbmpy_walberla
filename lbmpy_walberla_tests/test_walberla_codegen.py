@@ -17,16 +17,18 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
             force_field = ps.fields("force(3): [3D]", layout='fzyx')
             omega = sp.Symbol("omega")
 
-            lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega],
+            lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=True,
                                          force_model='guo', force=force_field.center_vector)
 
             scaling = RefinementScaling()
             scaling.add_standard_relaxation_rate_scaling(omega)
             scaling.add_force_scaling(force_field)
 
-            generate_lattice_model(ctx, 'SrtWithForceFieldModel', lb_method, refinement_scaling=scaling)
+            generate_lattice_model(ctx, 'SrtWithForceFieldModel', lb_method, refinement_scaling=scaling,
+                                   update_rule_params={'compressible': True})
             generate_boundary(ctx, 'MyUBB', UBB([0.05, 0, 0]), lb_method)
             generate_boundary(ctx, 'MyNoSlip', NoSlip(), lb_method)
+            assert 'static const bool compressible = true;' in ctx.files['SrtWithForceFieldModel.h']
 
     @staticmethod
     def test_sparse():
@@ -48,3 +50,12 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
 
             lb_assignments = create_lb_update_rule(stencil='D3Q19', method='srt').main_assignments
             generate_pack_info_from_kernel(ctx, 'MyPackInfo2', lb_assignments)
+
+    @staticmethod
+    def test_incompressible():
+        with ManualCodeGenerationContext() as ctx:
+            omega = sp.Symbol("omega")
+
+            lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=False)
+            generate_lattice_model(ctx, 'Model', lb_method, update_rule_params={'compressible': False})
+            assert 'static const bool compressible = false;' in ctx.files['Model.h']

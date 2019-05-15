@@ -100,7 +100,7 @@ public:
     static const real_t w[{{Q}}];
     static const real_t wInv[{{Q}}];
 
-    static const bool compressible = {{compressible}};
+    static const bool compressible = {% if compressible %}true{% else %}false{% endif %};
     static const int equilibriumAccuracyOrder = {{equilibrium_order}};
 
     class Sweep
@@ -211,7 +211,7 @@ public:
                       const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ),
                       real_t rho = real_t(1.0) )
    {
-        {% if compressible == 'false' %}
+        {% if not compressible %}
         rho -= real_t(1.0);
         {% endif %}
         {{equilibrium_from_direction}}
@@ -221,7 +221,7 @@ public:
                                    const Vector3<real_t> & u = Vector3< real_t >(real_t(0.0)),
                                    real_t rho = real_t(1.0) )
    {
-        {% if compressible == 'false' %}
+        {% if not compressible %}
         rho -= real_t(1.0);
         {% endif %}
         {{symmetric_equilibrium_from_direction}}
@@ -231,7 +231,7 @@ public:
                                     const Vector3< real_t > & u = Vector3<real_t>( real_t(0.0) ),
                                     real_t rho = real_t(1.0) )
    {
-        {% if compressible == 'false' %}
+        {% if not compressible %}
         rho -= real_t(1.0);
         {% endif %}
         {{asymmetric_equilibrium_from_direction}}
@@ -240,7 +240,7 @@ public:
    static std::vector< real_t > get( const Vector3< real_t > & u = Vector3<real_t>( real_t(0.0) ),
                                      real_t rho = real_t(1.0) )
    {
-      {% if compressible == 'false' %}
+      {% if not compressible %}
       rho -= real_t(1.0);
       {% endif %}
 
@@ -296,7 +296,7 @@ struct Equilibrium< {{class_name}}, void >
    static void set( FieldPtrOrIterator & it,
                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), real_t rho = real_t(1.0) )
    {
-        {%if compressible == 'false' %}
+        {%if not compressible %}
         rho -= real_t(1.0);
         {%endif %}
 
@@ -309,7 +309,7 @@ struct Equilibrium< {{class_name}}, void >
    static void set( PdfField_T & pdf, const cell_idx_t x, const cell_idx_t y, const cell_idx_t z,
                     const Vector3< real_t > & u = Vector3< real_t >( real_t(0.0) ), real_t rho = real_t(1.0) )
    {
-      {%if compressible == 'false' %}
+      {%if not compressible %}
       rho -= real_t(1.0);
       {%endif %}
 
@@ -364,7 +364,7 @@ struct DensityAndVelocity<{{class_name}}>
         const real_t u_2(0.0);
         {% endif %}
 
-        Equilibrium<{{class_name}}>::set(it, Vector3<real_t>(u_0, u_1, u_2), rho{%if compressible %} + real_t(1) {%endif%});
+        Equilibrium<{{class_name}}>::set(it, Vector3<real_t>(u_0, u_1, u_2), rho{%if not compressible %} + real_t(1) {%endif%});
     }
 
     template< typename PdfField_T >
@@ -376,7 +376,7 @@ struct DensityAndVelocity<{{class_name}}>
         const real_t u_2(0.0);
         {% endif %}
 
-        Equilibrium<{{class_name}}>::set(pdf, x, y, z, Vector3<real_t>(u_0, u_1, u_2), rho {%if compressible %} + real_t(1) {%endif%});
+        Equilibrium<{{class_name}}>::set(pdf, x, y, z, Vector3<real_t>(u_0, u_1, u_2), rho {%if not compressible %} + real_t(1) {%endif%});
     }
 };
 
@@ -398,7 +398,7 @@ struct DensityAndVelocityRange<{{class_name}}, FieldIteratorXYZ>
             const real_t u_2(0.0);
             {% endif %}
 
-            Equilibrium<{{class_name}}>::set(cellIt, Vector3<real_t>(u_0, u_1, u_2), rho{%if compressible %} + real_t(1) {%endif%});
+            Equilibrium<{{class_name}}>::set(cellIt, Vector3<real_t>(u_0, u_1, u_2), rho{%if not compressible %} + real_t(1) {%endif%});
         }
    }
 };
