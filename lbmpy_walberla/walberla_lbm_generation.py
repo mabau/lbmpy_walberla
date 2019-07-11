@@ -1,24 +1,22 @@
-import sympy as sp
-from sympy.tensor import IndexedBase
-from jinja2 import Environment, PackageLoader, Template
 import numpy as np
+import sympy as sp
+from jinja2 import Environment, PackageLoader, Template
+from sympy.tensor import IndexedBase
 
+from lbmpy.creationfunctions import create_lb_update_rule, update_with_default_parameters
+from lbmpy.relaxationrates import relaxation_rate_scaling
 from lbmpy.stencils import get_stencil
-from pystencils import AssignmentCollection
+from lbmpy.updatekernels import create_stream_pull_only_kernel
+from pystencils import AssignmentCollection, create_kernel
 from pystencils.astnodes import SympyAssignment
-from pystencils.sympyextensions import get_symmetric_part
-from pystencils.field import Field
-from pystencils.stencil import offset_to_direction_string, have_same_entries
-from pystencils.backends.cbackend import CustomSympyPrinter, CBackend, get_headers
+from pystencils.backends.cbackend import CBackend, CustomSympyPrinter, get_headers
 from pystencils.data_types import TypedSymbol
+from pystencils.field import Field
+from pystencils.stencil import have_same_entries, offset_to_direction_string
+from pystencils.sympyextensions import get_symmetric_part
 from pystencils.transformations import add_types
 from pystencils_walberla.codegen import KernelInfo, default_create_kernel_parameters
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
-from pystencils import create_kernel
-
-from lbmpy.relaxationrates import relaxation_rate_scaling
-from lbmpy.creationfunctions import update_with_default_parameters, create_lb_update_rule
-from lbmpy.updatekernels import create_stream_pull_only_kernel
 
 cpp_printer = CustomSympyPrinter(dialect='c')
 REFINEMENT_SCALE_FACTOR = sp.Symbol("level_scale_factor")

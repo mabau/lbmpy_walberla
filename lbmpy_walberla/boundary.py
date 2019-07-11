@@ -1,15 +1,15 @@
 import numpy as np
 from jinja2 import Environment, PackageLoader
 
+from lbmpy.boundaries.boundaryhandling import create_lattice_boltzmann_boundary_kernel
+from lbmpy_walberla.walberla_lbm_generation import KernelInfo
 from pystencils import Field, FieldType
-from pystencils.data_types import create_type, TypedSymbol
+from pystencils.boundaries.createindexlist import (
+    boundary_index_array_coordinate_names, direction_member_name,
+    numpy_data_type_for_boundary_object)
+from pystencils.data_types import TypedSymbol, create_type
 from pystencils_walberla.codegen import default_create_kernel_parameters
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
-
-from lbmpy.boundaries.boundaryhandling import create_lattice_boltzmann_boundary_kernel
-from pystencils.boundaries.createindexlist import numpy_data_type_for_boundary_object, \
-    boundary_index_array_coordinate_names, direction_member_name
-from lbmpy_walberla.walberla_lbm_generation import KernelInfo
 
 
 def generate_boundary(generation_context, class_name, boundary_object, lb_method, **create_kernel_params):

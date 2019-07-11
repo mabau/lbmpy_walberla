@@ -1,12 +1,14 @@
-import sympy as sp
-import pystencils as ps
-from lbmpy.boundaries import NoSlip, UBB
-from lbmpy.creationfunctions import create_lb_method, create_lb_update_rule
-from lbmpy_walberla import generate_lattice_model, RefinementScaling, generate_boundary
-from lbmpy_walberla.sparse import ListLbGenerator
-from pystencils_walberla.cmake_integration import ManualCodeGenerationContext
-from pystencils_walberla import generate_pack_info_for_field, generate_pack_info_from_kernel
 import unittest
+
+import sympy as sp
+
+import pystencils as ps
+from lbmpy.boundaries import UBB, NoSlip
+from lbmpy.creationfunctions import create_lb_method, create_lb_update_rule
+from lbmpy_walberla import RefinementScaling, generate_boundary, generate_lattice_model
+from lbmpy_walberla.sparse import ListLbGenerator
+from pystencils_walberla import generate_pack_info_for_field, generate_pack_info_from_kernel
+from pystencils_walberla.cmake_integration import ManualCodeGenerationContext
 
 
 class WalberlaLbmpyCodegenTest(unittest.TestCase):
