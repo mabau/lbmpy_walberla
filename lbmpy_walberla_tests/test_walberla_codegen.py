@@ -61,3 +61,16 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
             lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=False)
             generate_lattice_model(ctx, 'Model', lb_method, update_rule_params={'compressible': False})
             assert 'static const bool compressible = false;' in ctx.files['Model.h']
+
+    @staticmethod
+    def test_output_field():
+        with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
+            omega_field = ps.fields("omega_out: [3D]", layout='fzyx')
+            parameters = {
+                'stencil': 'D3Q19',
+                'method': 'trt',
+                'smagorinsky': True,
+                'omega_output_field': omega_field,
+            }
+            lb_method = create_lb_method(**parameters)
+            generate_lattice_model(ctx, 'Model', lb_method, update_rule_params=parameters)
