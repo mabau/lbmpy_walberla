@@ -67,10 +67,17 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
         with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
             omega_field = ps.fields("omega_out: [3D]", layout='fzyx')
             parameters = {
-                'stencil': 'D3Q19',
-                'method': 'trt',
-                'smagorinsky': True,
+                'stencil': 'D3Q27',
+                'method': 'trt-kbc-n1',
+                'compressible': True,
+                'entropic': True,
                 'omega_output_field': omega_field,
             }
             lb_method = create_lb_method(**parameters)
             generate_lattice_model(ctx, 'Model', lb_method, update_rule_params=parameters)
+
+    @staticmethod
+    def test_boundary():
+        with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
+            lb_method = create_lb_method(stencil='D3Q19', method='srt')
+            generate_boundary(ctx, 'Boundary', NoSlip(), lb_method, target='gpu')

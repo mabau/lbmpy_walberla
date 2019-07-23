@@ -4,9 +4,11 @@ from jinja2 import Environment, PackageLoader, Template
 from sympy.tensor import IndexedBase
 
 from lbmpy.creationfunctions import create_lb_update_rule, update_with_default_parameters
+from lbmpy.fieldaccess import StreamPullTwoFieldsAccessor, CollideOnlyInplaceAccessor
 from lbmpy.relaxationrates import relaxation_rate_scaling
 from lbmpy.stencils import get_stencil
-from lbmpy.updatekernels import create_stream_pull_only_kernel
+from lbmpy.updatekernels import create_stream_pull_only_kernel, create_lbm_kernel
+import pystencils as ps
 from pystencils import AssignmentCollection, create_kernel
 from pystencils.astnodes import SympyAssignment
 from pystencils.backends.cbackend import CBackend, CustomSympyPrinter, get_headers
@@ -18,8 +20,118 @@ from pystencils.transformations import add_types
 from pystencils_walberla.codegen import KernelInfo, default_create_kernel_parameters
 from pystencils_walberla.jinja_filters import add_pystencils_filters_to_jinja_env
 
-cpp_printer = CustomSympyPrinter(dialect='c')
+cpp_printer = CustomSympyPrinter()
 REFINEMENT_SCALE_FACTOR = sp.Symbol("level_scale_factor")
+
+
+def generate_lattice_model2(generation_context, class_name, collision_rule, refinement_scaling=None,
+                            **create_kernel_params):
+
+    # usually a numpy layout is chosen by default i.e. xyzf - which is bad for waLBerla where at least the spatial
+    # coordinates should be ordered in reverse direction i.e. zyx
+    params, opt_params = update_with_default_parameters({},  {'field_layout': 'fzyx'})
+
+    is_float = not generation_context.double_accuracy
+    dtype = np.float32 if is_float else np.float64
+    lb_method = collision_rule.method
+    stencil_name = get_stencil_name(lb_method.stencil)
+    if not stencil_name:
+        raise ValueError("lb_method uses a stencil that is not supported in waLBerla")
+
+    q = len(lb_method.stencil)
+
+    create_kernel_params = default_create_kernel_parameters(generation_context, create_kernel_params)
+    if create_kernel_params['target'] == 'gpu':
+        raise ValueError("Lattice Models can only be generated for CPUs. To generate LBM on GPUs use sweeps directly")
+
+    src_field, dst_field = ps.fields("pdfs({q}), pdfs_tmp({q})".format(q=q), layout='fzyx')
+
+    stream_collide_update_rule = create_lbm_kernel(collision_rule, src_field, dst_field, StreamPullTwoFieldsAccessor())
+    stream_collide_ast = create_kernel(stream_collide_update_rule, **create_kernel_params)
+    stream_collide_ast.function_name = 'kernel_streamCollide'
+
+    collide_update_rule = create_lbm_kernel(collision_rule, src_field, dst_field, CollideOnlyInplaceAccessor())
+    collide_ast = create_kernel(collide_update_rule, **create_kernel_params)
+    collide_ast.function_name = 'kernel_collide'
+
+    stream_update_rule = create_stream_pull_only_kernel(lb_method.stencil, None, 'pdfs', 'pdfs_tmp', 'fzyx', dtype)
+    stream_ast = create_kernel(stream_update_rule, **create_kernel_params)
+    stream_ast.function_name = 'kernel_stream'
+
+    vel_symbols = lb_method.conserved_quantity_computation.first_order_moment_symbols
+    rho_sym = sp.Symbol("rho")
+    pdfs_sym = sp.symbols("f_:%d" % (len(lb_method.stencil),))
+    vel_arr_symbols = [IndexedBase(sp.Symbol('u'), shape=(1,))[i] for i in range(len(vel_symbols))]
+    momentum_density_symbols = [sp.Symbol("md_%d" % (i,)) for i in range(len(vel_symbols))]
+
+    equilibrium = lb_method.get_equilibrium()
+    equilibrium = equilibrium.new_with_substitutions({a: b for a, b in zip(vel_symbols, vel_arr_symbols)})
+    _, _, equilibrium = add_types(equilibrium.main_assignments, "float32" if is_float else "float64", False)
+    equilibrium = sp.Matrix([e.rhs for e in equilibrium])
+
+    symmetric_equilibrium = get_symmetric_part(equilibrium, vel_arr_symbols)
+    asymmetric_equilibrium = sp.expand(equilibrium - symmetric_equilibrium)
+
+    force_model = lb_method.force_model
+    macroscopic_velocity_shift = None
+    if force_model:
+        if hasattr(force_model, 'macroscopic_velocity_shift'):
+            macroscopic_velocity_shift = [expression_to_code(e, "lm.", ["rho"])
+                                          for e in force_model.macroscopic_velocity_shift(rho_sym)]
+
+    cqc = lb_method.conserved_quantity_computation
+
+    eq_input_from_input_eqs = cqc.equilibrium_input_equations_from_init_values(sp.Symbol("rho_in"), vel_arr_symbols)
+    density_velocity_setter_macroscopic_values = equations_to_code(eq_input_from_input_eqs, dtype=dtype,
+                                                                   variables_without_prefix=['rho_in', 'u'])
+    momentum_density_getter = cqc.output_equations_from_pdfs(pdfs_sym, {'density': rho_sym,
+                                                                        'momentum_density': momentum_density_symbols})
+    constant_suffix = "f" if is_float else ""
+
+    required_headers = get_headers(stream_collide_ast)
+
+    jinja_context = {
+        'class_name': class_name,
+        'stencil_name': stencil_name,
+        'D': lb_method.dim,
+        'Q': len(lb_method.stencil),
+        'compressible': lb_method.conserved_quantity_computation.compressible,
+        'weights': ",".join(str(w.evalf()) + constant_suffix for w in lb_method.weights),
+        'inverse_weights': ",".join(str((1/w).evalf()) + constant_suffix for w in lb_method.weights),
+
+        'equilibrium_order': params['equilibrium_order'],
+
+        'equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, equilibrium),
+        'symmetric_equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, symmetric_equilibrium),
+        'asymmetric_equilibrium_from_direction': stencil_switch_statement(lb_method.stencil, asymmetric_equilibrium),
+        'equilibrium': [cpp_printer.doprint(e) for e in equilibrium],
+
+        'macroscopic_velocity_shift': macroscopic_velocity_shift,
+        'density_getters': equations_to_code(cqc.output_equations_from_pdfs(pdfs_sym, {"density": rho_sym}),
+                                             variables_without_prefix=[e.name for e in pdfs_sym], dtype=dtype),
+        'momentum_density_getter': equations_to_code(momentum_density_getter, variables_without_prefix=pdfs_sym,
+                                                     dtype=dtype),
+        'density_velocity_setter_macroscopic_values': density_velocity_setter_macroscopic_values,
+
+        'refinement_scaling': refinement_scaling,
+
+        'stream_collide_kernel': KernelInfo(stream_collide_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')], []),
+        'collide_kernel': KernelInfo(collide_ast, [], [], []),
+        'stream_kernel': KernelInfo(stream_ast, ['pdfs_tmp'], [('pdfs', 'pdfs_tmp')], []),
+        'target': 'cpu',
+        'namespace': 'lbm',
+        'headers': required_headers,
+    }
+
+    env = Environment(loader=PackageLoader('lbmpy_walberla'))
+    add_pystencils_filters_to_jinja_env(env)
+
+    header = env.get_template('LatticeModel.tmpl.h').render(**jinja_context)
+    source = env.get_template('LatticeModel.tmpl.cpp').render(**jinja_context)
+
+    source_extension = "cpp" if create_kernel_params.get("target", "cpu") == "cpu" else "cu"
+    generation_context.write_file("{}.h".format(class_name), header)
+    generation_context.write_file("{}.{}".format(class_name, source_extension), source)
 
 
 def generate_lattice_model(generation_context, class_name, lb_method, refinement_scaling=None, update_rule_params={},
