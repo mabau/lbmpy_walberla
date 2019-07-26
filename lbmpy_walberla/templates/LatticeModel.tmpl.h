@@ -101,7 +101,6 @@ public:
     static const real_t wInv[{{Q}}];
 
     static const bool compressible = {% if compressible %}true{% else %}false{% endif %};
-    static const int equilibriumAccuracyOrder = {{equilibrium_order}};
 
     class Sweep
     {
