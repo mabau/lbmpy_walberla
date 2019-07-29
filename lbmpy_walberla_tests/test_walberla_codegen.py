@@ -4,7 +4,7 @@ import sympy as sp
 
 import pystencils as ps
 from lbmpy.boundaries import UBB, NoSlip
-from lbmpy.creationfunctions import create_lb_method, create_lb_update_rule
+from lbmpy.creationfunctions import create_lb_method, create_lb_update_rule, create_lb_collision_rule
 from lbmpy_walberla import RefinementScaling, generate_boundary, generate_lattice_model
 from lbmpy_walberla.sparse import ListLbGenerator
 from pystencils_walberla import generate_pack_info_for_field, generate_pack_info_from_kernel
@@ -19,17 +19,16 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
             force_field = ps.fields("force(3): [3D]", layout='fzyx')
             omega = sp.Symbol("omega")
 
-            lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=True,
-                                         force_model='guo', force=force_field.center_vector)
+            cr = create_lb_collision_rule(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=True,
+                                          force_model='guo', force=force_field.center_vector)
 
             scaling = RefinementScaling()
             scaling.add_standard_relaxation_rate_scaling(omega)
             scaling.add_force_scaling(force_field)
 
-            generate_lattice_model(ctx, 'SrtWithForceFieldModel', lb_method, refinement_scaling=scaling,
-                                   update_rule_params={'compressible': True})
-            generate_boundary(ctx, 'MyUBB', UBB([0.05, 0, 0]), lb_method)
-            generate_boundary(ctx, 'MyNoSlip', NoSlip(), lb_method)
+            generate_lattice_model(ctx, 'SrtWithForceFieldModel', cr, refinement_scaling=scaling)
+            generate_boundary(ctx, 'MyUBB', UBB([0.05, 0, 0]), cr.method)
+            generate_boundary(ctx, 'MyNoSlip', NoSlip(), cr.method)
             assert 'static const bool compressible = true;' in ctx.files['SrtWithForceFieldModel.h']
 
     @staticmethod
@@ -58,8 +57,8 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
         with ManualCodeGenerationContext() as ctx:
             omega = sp.Symbol("omega")
 
-            lb_method = create_lb_method(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=False)
-            generate_lattice_model(ctx, 'Model', lb_method, update_rule_params={'compressible': False})
+            cr = create_lb_collision_rule(stencil='D3Q19', method='srt', relaxation_rates=[omega], compressible=False)
+            generate_lattice_model(ctx, 'Model', cr)
             assert 'static const bool compressible = false;' in ctx.files['Model.h']
 
     @staticmethod
@@ -73,8 +72,8 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
                 'entropic': True,
                 'omega_output_field': omega_field,
             }
-            lb_method = create_lb_method(**parameters)
-            generate_lattice_model(ctx, 'Model', lb_method, update_rule_params=parameters)
+            cr = create_lb_collision_rule(**parameters)
+            generate_lattice_model(ctx, 'Model', cr)
 
     @staticmethod
     def test_boundary():
