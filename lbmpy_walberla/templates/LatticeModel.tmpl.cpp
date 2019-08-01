@@ -24,11 +24,6 @@
 #include "lbm/sweeps/Streaming.h"
 #include "{{class_name}}.h"
 
-{% for header in headers %}
-#include {{header}}
-{% endfor %}
-
-
 #ifdef _MSC_VER
 #  pragma warning( disable : 4458 )
 #endif
@@ -47,6 +42,10 @@
 #   pragma GCC diagnostic ignored "-Wunused-variable"
 #   pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
+
+{% for header in headers %}
+#include {{header}}
+{% endfor %}
 
 
 using namespace std;

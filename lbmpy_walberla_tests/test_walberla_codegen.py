@@ -76,6 +76,21 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
             generate_lattice_model(ctx, 'Model', cr)
 
     @staticmethod
+    def test_fluctuating():
+        with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
+            omega_shear, omega_bulk = sp.symbols("omega, omega_free")
+            force_field, vel_field = ps.fields("force(3), velocity(3): [3D]", layout='fzyx')
+
+            # the collision rule of the LB method where the some advanced features
+            collision_rule = create_lb_collision_rule(
+                stencil='D3Q19', compressible=True, fluctuating=True,
+                method='mrt3', relaxation_rates=[omega_shear, omega_bulk],
+                force_model='guo', force=force_field.center_vector,
+                optimization={'cse_global': False}
+            )
+            generate_lattice_model(ctx, 'FluctuatingMRT', collision_rule)
+
+    @staticmethod
     def test_boundary():
         with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
             lb_method = create_lb_method(stencil='D3Q19', method='srt')
