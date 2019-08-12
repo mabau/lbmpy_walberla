@@ -57,6 +57,7 @@
 #endif
 
 {% set lmIgnores = ('pdfs', 'pdfs_tmp') %}
+{% set lmOffsets = ('block_offset_0', 'block_offset_1', 'block_offset_2') %}
 
 
 // Forward declarations
@@ -121,19 +122,23 @@ public:
         {{stream_collide_kernel|generate_members(only_fields=True)|indent(8)}}
     };
 
-    {{class_name}}( {{stream_collide_kernel|generate_constructor_parameters(lmIgnores) }} )
-        : {{ stream_collide_kernel|generate_constructor_initializer_list(lmIgnores) }}, currentLevel(0)
+    {{class_name}}( {{stream_collide_kernel|generate_constructor_parameters(lmIgnores+lmOffsets) }} )
+        : {{ stream_collide_kernel|generate_constructor_initializer_list(lmIgnores+lmOffsets) }}, currentLevel(0)
     {};
 
-    void configure( IBlock & block, StructuredBlockStorage &)  { configureBlock( &block ); }
+    void configure( IBlock & block, StructuredBlockStorage & storage )  { configureBlock( &block, &storage ); }
 
     // Parameters:
     {{stream_collide_kernel|generate_members(lmIgnores)|indent(4)}}
 
 private:
-    void configureBlock(IBlock * block)
+    void configureBlock(IBlock * block, StructuredBlockStorage * storage)
     {
-        {{stream_collide_kernel|generate_block_data_to_field_extraction(lmIgnores, no_declarations=True)|indent(8)}}
+        {{stream_collide_kernel|generate_block_data_to_field_extraction(lmIgnores+lmOffsets, no_declarations=True)|indent(8)}}
+        block_offset_0 = uint32_c(storage->getBlockCellBB(*block).xMin());
+        block_offset_1 = uint32_c(storage->getBlockCellBB(*block).yMin());
+        block_offset_2 = uint32_c(storage->getBlockCellBB(*block).zMin());
+        blockId = &block->getId();
 
         {% if refinement_scaling -%}
         const uint_t targetLevel = block->getBlockStorage().getLevel(*block);
@@ -171,6 +176,7 @@ private:
 
     // Updated by configureBlock:
     {{stream_collide_kernel|generate_block_data_to_field_extraction(lmIgnores, declarations_only=True)|indent(4)}}
+    const IBlockID * blockId;
     uint_t currentLevel;
 
     // Backend classes can access private members:
