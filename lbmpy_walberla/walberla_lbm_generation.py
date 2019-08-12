@@ -117,13 +117,14 @@ def generate_lattice_model(generation_context, class_name, collision_rule, refin
     lb_method = collision_rule.method
 
     q = len(lb_method.stencil)
+    dim = lb_method.dim
 
     create_kernel_params = default_create_kernel_parameters(generation_context, create_kernel_params)
     if create_kernel_params['target'] == 'gpu':
         raise ValueError("Lattice Models can only be generated for CPUs. To generate LBM on GPUs use sweeps directly")
 
-    src_field = ps.Field.create_generic('pdfs', 3, dtype, index_dimensions=1, layout='fzyx', index_shape=(q,))
-    dst_field = ps.Field.create_generic('pdfs_tmp', 3, dtype, index_dimensions=1, layout='fzyx', index_shape=(q,))
+    src_field = ps.Field.create_generic('pdfs', dim, dtype, index_dimensions=1, layout='fzyx', index_shape=(q,))
+    dst_field = ps.Field.create_generic('pdfs_tmp', dim, dtype, index_dimensions=1, layout='fzyx', index_shape=(q,))
 
     stream_collide_update_rule = create_lbm_kernel(collision_rule, src_field, dst_field, StreamPullTwoFieldsAccessor())
     stream_collide_ast = create_kernel(stream_collide_update_rule, **create_kernel_params)
