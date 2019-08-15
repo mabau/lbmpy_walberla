@@ -95,6 +95,7 @@ def __lattice_model(generation_context, class_name, lb_method, stream_collide_as
         'target': 'cpu',
         'namespace': 'lbm',
         'headers': required_headers,
+        'need_block_offsets': ['block_offset_{}'.format(i) in [param.symbol.name for param in stream_collide_ast.get_parameters()] for i in range(3)],
     }
 
     env = Environment(loader=PackageLoader('lbmpy_walberla'))
