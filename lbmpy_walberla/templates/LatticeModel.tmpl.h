@@ -135,9 +135,15 @@ private:
     void configureBlock(IBlock * block, StructuredBlockStorage * storage)
     {
         {{stream_collide_kernel|generate_block_data_to_field_extraction(lmIgnores+lmOffsets, no_declarations=True)|indent(8)}}
+        {% if need_block_offsets[0] -%}
         block_offset_0 = uint32_c(storage->getBlockCellBB(*block).xMin());
+        {% endif -%}
+        {%- if need_block_offsets[1] -%}
         block_offset_1 = uint32_c(storage->getBlockCellBB(*block).yMin());
+        {% endif -%}
+        {%- if need_block_offsets[2] -%}
         block_offset_2 = uint32_c(storage->getBlockCellBB(*block).zMin());
+        {% endif %}
         blockId = &block->getId();
 
         {% if refinement_scaling -%}
@@ -171,7 +177,7 @@ private:
 
             currentLevel = targetLevel;
         }
-        {% endif -%}
+        {% endif %}
     }
 
     // Updated by configureBlock:
