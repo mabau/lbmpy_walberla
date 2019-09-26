@@ -91,7 +91,13 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
             generate_lattice_model(ctx, 'FluctuatingMRT', collision_rule)
 
     @staticmethod
-    def test_boundary():
+    def test_boundary_3D():
         with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
             lb_method = create_lb_method(stencil='D3Q19', method='srt')
+            generate_boundary(ctx, 'Boundary', NoSlip(), lb_method, target='gpu')
+
+    @staticmethod
+    def test_boundary_2D():
+        with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
+            lb_method = create_lb_method(stencil='D2Q9', method='srt')
             generate_boundary(ctx, 'Boundary', NoSlip(), lb_method, target='gpu')
