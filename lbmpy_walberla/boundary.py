@@ -32,7 +32,16 @@ def generate_boundary(generation_context, class_name, boundary_object, lb_method
                                                       openmp=generation_context.openmp)
     kernel.function_name = "boundary_" + boundary_object.name
 
-    stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(lb_method.stencil)]
+    # waLBerla is a 3D framework. Therefore, a zero for the z index has to be added if we work in 2D
+    if lb_method.dim == 2:
+        stencil = ()
+        for d in lb_method.stencil:
+            d = d + (0,)
+            stencil = stencil + (d,)
+    else:
+        stencil = lb_method.stencil
+
+    stencil_info = [(i, ", ".join([str(e) for e in d])) for i, d in enumerate(stencil)]
 
     context = {
         'class_name': boundary_object.name,
