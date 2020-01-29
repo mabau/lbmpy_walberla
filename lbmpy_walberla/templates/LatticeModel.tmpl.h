@@ -48,14 +48,12 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wconversion"
 #endif
 
 #ifdef WALBERLA_CXX_COMPILER_IS_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wconversion"
 #endif
 
 {% set lmIgnores = ('pdfs', 'pdfs_tmp') %}
@@ -125,7 +123,7 @@ public:
     };
 
     {{class_name}}( {{stream_collide_kernel|generate_constructor_parameters(lmIgnores+lmOffsets) }} )
-        : {{ stream_collide_kernel|generate_constructor_initializer_list(lmIgnores+lmOffsets) }}{% if stream_collide_kernel|generate_constructor_initializer_list(lmIgnores+lmOffsets)|length %},{% endif %} currentLevel(0)
+        : {{ stream_collide_kernel|generate_constructor_initializer_list(lmIgnores+lmOffsets) }}, currentLevel(0)
     {};
 
     void configure( IBlock & block, StructuredBlockStorage & storage )  { configureBlock( &block, &storage ); }
