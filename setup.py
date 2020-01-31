@@ -1,3 +1,5 @@
+import os
+import sys
 from setuptools import setup, find_packages
 import subprocess
 
@@ -32,9 +34,25 @@ def version_number_from_git(tag_prefix='release/', sha_length=10, version_format
     return version_string
 
 
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
+try:
+    sys.path.insert(0, os.path.abspath('doc'))
+    from version_from_git import version_number_from_git
+
+    version = version_number_from_git()
+    with open("RELEASE-VERSION", "w") as f:
+        f.write(version)
+except ImportError:
+    version = open('RELEASE-VERSION', 'r').read()
+
+
 setup(name='lbmpy_walberla',
-      version=version_number_from_git(),
+      version=version,
       description='Code Generation for Lattice Boltzmann Methods in the walberla framework',
+      long_description=readme(),
       author='Martin Bauer',
       license='AGPLv3',
       author_email='martin.bauer@fau.de',
