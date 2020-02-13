@@ -1,5 +1,5 @@
 import numpy as np
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from lbmpy.boundaries.boundaryhandling import create_lattice_boltzmann_boundary_kernel
 from lbmpy_walberla.walberla_lbm_generation import KernelInfo
@@ -54,7 +54,7 @@ def generate_boundary(generation_context, class_name, boundary_object, lb_method
         'namespace': 'lbm',
     }
 
-    env = Environment(loader=PackageLoader('lbmpy_walberla'))
+    env = Environment(loader=PackageLoader('lbmpy_walberla'), undefined=StrictUndefined)
     add_pystencils_filters_to_jinja_env(env)
 
     header = env.get_template('Boundary.tmpl.h').render(**context)

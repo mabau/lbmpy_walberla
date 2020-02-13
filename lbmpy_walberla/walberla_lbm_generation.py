@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 import sympy as sp
-from jinja2 import Environment, PackageLoader, Template
+from jinja2 import Environment, PackageLoader, StrictUndefined, Template
 from sympy.tensor import IndexedBase
 
 import pystencils as ps
@@ -98,7 +98,7 @@ def __lattice_model(generation_context, class_name, lb_method, stream_collide_as
         'need_block_offsets': ['block_offset_{}'.format(i) in [param.symbol.name for param in stream_collide_ast.get_parameters()] for i in range(3)],
     }
 
-    env = Environment(loader=PackageLoader('lbmpy_walberla'))
+    env = Environment(loader=PackageLoader('lbmpy_walberla'), undefined=StrictUndefined)
     add_pystencils_filters_to_jinja_env(env)
 
     header = env.get_template('LatticeModel.tmpl.h').render(**jinja_context)
@@ -206,7 +206,7 @@ def stencil_switch_statement(stencil, values):
     """)
 
     dir_to_value_dict = {offset_to_direction_string(d): cpp_printer.doprint(v) for d, v in zip(stencil, values)}
-    return template.render(dir_to_value_dict=dir_to_value_dict)
+    return template.render(dir_to_value_dict=dir_to_value_dict, undefined=StrictUndefined)
 
 
 def field_and_symbol_substitute(expr, variable_prefix="lm.", variables_without_prefix=[]):
