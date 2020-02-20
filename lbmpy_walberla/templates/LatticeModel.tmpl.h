@@ -146,7 +146,7 @@ private:
         {% endif %}
         blockId = &block->getId();
 
-        {% if refinement_scaling -%}
+        {% if refinement_scaling_info -%}
         const uint_t targetLevel = block->getBlockStorage().getLevel(*block);
 
         if( targetLevel != currentLevel )
@@ -157,7 +157,7 @@ private:
             else // currentLevel > targetLevel
                level_scale_factor = real_t(1) / real_c( uint_t(1) << ( currentLevel - targetLevel ) );
 
-            {% for scalingType, name, expression in refinement_scaling.scaling_info -%}
+            {% for scalingType, name, expression in refinement_scaling_info -%}
             {% if scalingType == 'normal' %}
             {{name}} = {{expression}};
             {% elif scalingType in ('field_with_f', 'field_xyz') %}
@@ -278,7 +278,7 @@ struct AdaptVelocityToForce<{{class_name}}, void>
       auto y = it.y();
       auto z = it.z();
       {% if macroscopic_velocity_shift %}
-      return velocity - Vector3<real_t>({{macroscopic_velocity_shift | join(",") }} {% if D == 2 %}, 0.0 {%endif %} );
+      return velocity - Vector3<real_t>({{macroscopic_velocity_shift | join(",") }} {% if D == 2 %}, real_t(0.0) {%endif %} );
       {% else %}
       return velocity;
       {% endif %}
@@ -289,7 +289,7 @@ struct AdaptVelocityToForce<{{class_name}}, void>
    {
       {% if macroscopic_velocity_shift %}
 
-      return velocity - Vector3<real_t>({{macroscopic_velocity_shift | join(",") }} {% if D == 2 %}, 0.0 {%endif %} );
+      return velocity - Vector3<real_t>({{macroscopic_velocity_shift | join(",") }} {% if D == 2 %}, real_t(0.0) {%endif %} );
       {% else %}
       return velocity;
       {% endif %}
