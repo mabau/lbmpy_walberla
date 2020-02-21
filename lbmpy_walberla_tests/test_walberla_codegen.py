@@ -34,13 +34,13 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
     @staticmethod
     def test_sparse():
         from lbmpy.creationfunctions import create_lb_collision_rule
-        from pystencils import show_code
+        from pystencils import get_code_str
         g = ListLbGenerator(create_lb_collision_rule())
-        kernel_code = str(show_code(g.kernel()))
+        kernel_code = get_code_str(g.kernel())
         assert 'num_cells' in kernel_code
-        setter_code = str(show_code(g.setter_ast()))
+        setter_code = get_code_str(g.setter_ast())
         assert 'num_cells' in setter_code
-        getter_code = str(show_code(g.getter_ast()))
+        getter_code = get_code_str(g.getter_ast())
         assert 'num_cells' in getter_code
 
     @staticmethod
