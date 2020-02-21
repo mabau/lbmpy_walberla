@@ -78,13 +78,13 @@ class WalberlaLbmpyCodegenTest(unittest.TestCase):
     @staticmethod
     def test_fluctuating():
         with ManualCodeGenerationContext(openmp=True, double_accuracy=True) as ctx:
-            omega_shear, omega_bulk = sp.symbols("omega, omega_free")
+            omega_shear = sp.symbols("omega")
             force_field, vel_field = ps.fields("force(3), velocity(3): [3D]", layout='fzyx')
 
             # the collision rule of the LB method where the some advanced features
             collision_rule = create_lb_collision_rule(
                 stencil='D3Q19', compressible=True, fluctuating={'seed': 0, 'temperature': 1e-6},
-                method='mrt3', relaxation_rates=[omega_shear, omega_bulk],
+                method='mrt', relaxation_rates=[omega_shear]*19,
                 force_model='guo', force=force_field.center_vector,
                 optimization={'cse_global': False}
             )
