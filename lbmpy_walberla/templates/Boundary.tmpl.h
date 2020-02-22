@@ -178,7 +178,7 @@ private:
     void run( IBlock * block, IndexVectors::Type type{% if target == 'gpu'%}, cudaStream_t stream = 0 {%endif%});
 
     BlockDataID indexVectorID;
-
+public:
     {{kernel|generate_members(('indexVector', 'indexVectorSize'))|indent(4)}}
 };
 
