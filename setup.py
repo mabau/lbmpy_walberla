@@ -5,7 +5,7 @@ from distutils.version import StrictVersion
 
 def version_number_from_git(tag_prefix='release/', sha_length=10, version_format="{version}.dev{commits}+{sha}"):
     def get_released_versions():
-        tags = sorted(subprocess.getoutput('git tag').split('\n'))
+        tags = sorted(subprocess.check_output(['git', 'tag'], encoding='utf-8').split('\n'))
         versions = [t[len(tag_prefix):] for t in tags if t.startswith(tag_prefix)]
         return versions
 
@@ -17,9 +17,13 @@ def version_number_from_git(tag_prefix='release/', sha_length=10, version_format
         parsed_version[-1] += 1
         return '.'.join(str(i) for i in parsed_version)
 
-    version_strings = get_released_versions()
-    version_strings.sort(key=StrictVersion)
-    latest_release = version_strings[-1]
+    try:
+        version_strings = get_released_versions()
+        version_strings.sort(key=StrictVersion)
+        latest_release = version_strings[-1]
+    except subprocess.CalledProcessError:
+        return open('RELEASE-VERSION', 'r').read()
+
     commits_since_tag = subprocess.getoutput('git rev-list {}..HEAD --count'.format(tag_from_version(latest_release)))
     sha = subprocess.getoutput('git rev-parse HEAD')[:sha_length]
     is_dirty = len(subprocess.getoutput("git status --untracked-files=no -s")) > 0
@@ -32,6 +36,10 @@ def version_number_from_git(tag_prefix='release/', sha_length=10, version_format
 
     if is_dirty:
         version_string += ".dirty"
+
+    with open("RELEASE-VERSION", "w") as f:
+        f.write(version_string)
+
     return version_string
 
 
